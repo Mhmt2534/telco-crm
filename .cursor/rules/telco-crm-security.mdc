@@ -1,0 +1,78 @@
+---
+description: Security architecture rules for JWT, PII protection, audit logging, and rate limiting
+globs: **/*.java
+alwaysApply: false
+---
+
+# Telco CRM — Security Architecture
+
+## JWT Authentication Flow
+
+- `identity-service` is the **sole issuer** of JWT access and refresh tokens (jjwt `0.12.6`).
+- `api-gateway` validates every inbound JWT and, on success, injects `X-User-Id` and `X-User-Roles` headers into the downstream request.
+- **Microservices must never validate the JWT themselves.** They trust the gateway-injected headers.
+- Do not add `spring-boot-starter-security` + JWT parsing to any service other than `identity-service` and `api-gateway`.
+
+```java
+// ✅ GOOD — microservice reads identity from header only
+String userId = request.getHeader("X-User-Id");
+
+// ❌ BAD — microservice re-parses the JWT
+String userId = jwtUtil.extractUserId(request.getHeader("Authorization"));
+```
+
+## Authorization
+
+- Use `@PreAuthorize` for all endpoint-level access control. Never implement manual role checks inside service methods.
+- Admin-only endpoints (e.g., billing run trigger, product catalog mutation) must always carry an explicit `@PreAuthorize` annotation.
+
+```java
+// ✅ GOOD
+@PreAuthorize("hasRole('ADMIN')")
+@PostMapping("/billing/runs")
+public ResponseEntity<Void> triggerBillRun() { ... }
+```
+
+## Refresh Token Rotation
+
+- After every successful token refresh, add the consumed refresh token to a Redis blacklist.
+- On any reuse of a blacklisted refresh token, immediately revoke **all** active tokens for that user.
+- Never store refresh tokens in the database; use Redis with an appropriate TTL.
+
+## PII Encryption
+
+- The following fields are PII and **must be stored encrypted** using AES-GCM:
+  - `Customer.identityNumber` (TCKN / VKN)
+  - `Payment.cardNumber` (and any card-related field)
+- Encryption keys must be read from Vault or Kubernetes Secrets. Never hardcode or commit keys.
+- Decryption must only happen at the service layer; raw encrypted bytes must never leak into API responses.
+
+```java
+// ✅ GOOD
+@Column(name = "identity_number")
+private String identityNumber; // stored as AES-GCM ciphertext, decrypted in service layer
+
+// ❌ BAD — returning raw PII from repository to controller without decryption guard
+```
+
+## Audit Logging
+
+The following services must write an `audit_log` record on **every state-mutating operation** (create, update, delete, status change):
+- `identity-service`
+- `customer-service`
+- `payment-service`
+- `subscription-service`
+
+Minimum audit log fields: `entityType`, `entityId`, `action`, `performedBy` (userId), `performedAt` (UTC timestamp), `before` (JSON snapshot), `after` (JSON snapshot).
+
+## Rate Limiting
+
+- Rate limiting is enforced at the `api-gateway` using Redis.
+- Default limit: **100 requests/minute per authenticated user**.
+- Do not implement additional rate limiting inside individual microservices for user traffic.
+
+## KVKK / GDPR Compliance
+
+- Never hard-delete `Customer` records. Always use soft delete (set `deletedAt` timestamp).
+- PII fields must be included in the data retention and erasure process; use field-level encryption to enable cryptographic erasure.
+- Audit logs for customer data changes are mandatory to satisfy KVKK regulatory requirements.

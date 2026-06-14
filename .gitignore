@@ -1,0 +1,143 @@
+# =========================
+
+# Maven
+
+# =========================
+
+target/
+**/target/
+
+# Maven Wrapper
+
+.mvn/wrapper/maven-wrapper.jar
+
+# Logs
+
+*.log
+
+# =========================
+
+# Java
+
+# =========================
+
+*.class
+*.jar
+*.war
+*.ear
+
+# JVM crash logs
+
+hs_err_pid*
+replay_pid*
+
+# =========================
+
+# IDE - IntelliJ IDEA
+
+# =========================
+
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# =========================
+
+# Eclipse / STS
+
+# =========================
+
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# =========================
+
+# VS Code / Cursor
+
+# =========================
+
+.vscode/
+
+# Cursor cache (isteğe bağlı)
+
+.cursor/cache/
+.cursor/index/
+
+# =========================
+
+# OS Files
+
+# =========================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+
+# Temporary Files
+
+# =========================
+
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# =========================
+
+# Build Metadata
+
+# =========================
+
+*.lst
+
+# Maven compiler plugin files
+
+createdFiles.lst
+inputFiles.lst
+
+# =========================
+
+# Environment Files
+
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+
+# Test Reports
+
+# =========================
+
+surefire-reports/
+failsafe-reports/
+
+# =========================
+
+# Coverage
+
+# =========================
+
+coverage/
+jacoco.exec
+/site/
+
+# =========================
+
+# Generated files (isteğe bağlı)
+
+# =========================
+
+generated/
+**/generated/

@@ -1,0 +1,108 @@
+---
+description: Data persistence conventions — JPA entities, Flyway migrations, MapStruct mapping, and per-service database rules
+globs: **/*.java
+alwaysApply: false
+---
+
+# Telco CRM — Data & Persistence
+
+## JPA / Hibernate Configuration
+
+- `spring.jpa.hibernate.ddl-auto` must always be set to **`validate`**. Never use `create`, `create-drop`, or `update` in any environment.
+- Schema changes are managed exclusively by **Flyway**. The JPA setting only verifies that the schema matches the entity model at startup.
+- `spring.jpa.show-sql` may be `true` in development config; ensure it is `false` (or overridden) in production profiles.
+
+## Flyway Migrations
+
+- Migration scripts live in each service under `src/main/resources/db/migration/`.
+- Naming convention: `V{version}__{description}.sql` (e.g., `V1__create_customer_table.sql`).
+- Never modify a migration script that has already been applied. Always create a new versioned script.
+- Each service's Flyway configuration must point to its own dedicated database URL.
+
+## Entity Conventions
+
+- All JPA entities must extend `BaseEntity` from `common-persistence`.
+- Use `UUID` as the primary key type for all entities.
+- Map enum columns with `@Enumerated(EnumType.STRING)`. Never use `EnumType.ORDINAL`.
+- Use `OffsetDateTime` for all timestamp fields. Never use `java.util.Date` or `java.sql.Timestamp`.
+
+```java
+// ✅ GOOD
+@Entity
+public class Customer extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CustomerType type; // INDIVIDUAL | CORPORATE
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt; // soft delete
+}
+
+// ❌ BAD
+@Enumerated(EnumType.ORDINAL) // breaks on enum reordering
+private CustomerType type;
+private Date createdAt; // avoid java.util.Date
+```
+
+## Soft Delete
+
+- `Customer` must use soft delete only. Set `deletedAt = now()` on deletion; never issue a `DELETE` SQL statement for customer records.
+- Repositories querying customers must filter `WHERE deleted_at IS NULL` by default (use `@Where` or a `Specification`).
+
+## DTO Mapping — MapStruct
+
+- Always use MapStruct for all DTO ↔ Entity conversions. Never write manual field-by-field mapping code.
+- Mapper interfaces belong in a `mapper` package within each service.
+- Mark all mapper interfaces with `@Mapper(componentModel = "spring")`.
+
+```java
+// ✅ GOOD
+@Mapper(componentModel = "spring")
+public interface CustomerMapper {
+    CustomerResponse toResponse(Customer customer);
+    Customer toEntity(CreateCustomerRequest request);
+}
+
+// ❌ BAD
+CustomerResponse response = new CustomerResponse();
+response.setFirstName(customer.getFirstName()); // manual mapping
+```
+
+## Per-Service Database Registry
+
+| Service | Database Name |
+|---|---|
+| `identity-service` | `identity_db` |
+| `customer-service` | `customer_db` |
+| `product-catalog-service` | `product_catalog_db` |
+| `order-service` | `order_db` |
+| `subscription-service` | `subscription_db` |
+| `usage-service` | `usage_db` |
+| `billing-service` | `billing_db` |
+| `payment-service` | `payment_db` |
+| `notification-service` | `notification_db` |
+| `ticket-service` | `ticket_db` |
+
+## Redis Usage
+
+- Use Redis for: idempotency key storage, refresh token blacklist, cache-aside for product catalog reads, rate limit counters.
+- Always set an explicit TTL when writing to Redis. Never write without expiry.
+- Redis access goes through `spring-boot-starter-data-redis` (reactive variant in `api-gateway`).
+
+## Key Domain Entity Fields (Reference)
+
+```
+Customer:      id, type[INDIVIDUAL|CORPORATE], firstName, lastName, identityNumber(encrypted), dateOfBirth, status, deletedAt
+Order:         id, customerId, status[DRAFT|PENDING_PAYMENT|PAID|FULFILLED|CANCELLED], totalAmount, currency
+SagaState:     id, orderId, currentStep, payload, lastUpdated
+Subscription:  id, customerId, msisdn, tariffCode, status[ACTIVE|SUSPENDED|TERMINATED], activatedAt
+Invoice:       id, customerId, subscriptionId, periodStart, periodEnd, subTotal, tax, grandTotal, status, dueDate
+Payment:       id, invoiceId, amount, method, status, externalRef, paidAt
+Quota:         id, subscriptionId, periodStart, periodEnd, minutesRemaining, smsRemaining, mbRemaining
+Ticket:        id, customerId, category, priority, status, slaDueAt
+```

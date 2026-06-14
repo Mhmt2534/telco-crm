@@ -1,0 +1,82 @@
+---
+description: Microservices architecture patterns, service boundaries, and inter-service communication rules for the Telco CRM platform
+alwaysApply: true
+---
+
+# Telco CRM — Architecture Patterns
+
+## Service Boundaries
+
+- Every service owns exactly one PostgreSQL database. Never share a database between services.
+- Per-service database names: `identity_db`, `customer_db`, `product_catalog_db`, `order_db`, `subscription_db`, `usage_db`, `billing_db`, `payment_db`, `notification_db`, `ticket_db`.
+- A service must never query another service's database directly. All cross-service data access goes through REST (OpenFeign) or Kafka events.
+
+## Inter-Service Communication
+
+| Scenario | Protocol | Reason |
+|---|---|---|
+| Customer existence check during order creation | Synchronous REST (OpenFeign) | Immediate validation required |
+| Catalog product price snapshot during order | Synchronous REST + Redis cache | Snapshot must be stored with order |
+| Order → Subscription activation | Asynchronous Kafka | Eventual consistency, compensatable |
+| Subscription → Billing | Asynchronous Kafka | Loose coupling |
+| CDR stream → Usage | Asynchronous Kafka | High volume, replayable |
+| Invoice → Notification | Asynchronous Kafka | Notification failure must not affect invoice |
+| Payment PSP validation | Synchronous REST | Immediate customer response required |
+
+**Rule**: Prefer asynchronous Kafka for cross-service state changes. Use synchronous OpenFeign only when the caller needs an immediate, blocking response.
+
+## Mandatory Patterns
+
+### Transactional Outbox
+Every service that publishes Kafka events must use the Outbox pattern:
+1. Write domain change + outbox record in a **single DB transaction**.
+2. A separate publisher worker reads the outbox table and sends to Kafka.
+3. Never publish to Kafka directly inside a `@Transactional` method without an outbox record.
+
+### Idempotent Consumers
+Every Kafka consumer must be idempotent. Track processed event IDs (e.g., in Redis or a `processed_events` DB table) and discard duplicates.
+
+### Saga (Choreography) — New Line Order
+```
+1. POST /orders → Order Service: persist Order(PENDING_PAYMENT), publish OrderCreated
+2. Payment Service consumes OrderCreated → charge PSP → publish PaymentCompleted | PaymentFailed
+3. Subscription Service consumes PaymentCompleted → allocate MSISDN → publish SubscriptionActivated | SubscriptionActivationFailed
+4. Order Service consumes SubscriptionActivated → mark Order(FULFILLED)
+5. Notification Service consumes SubscriptionActivated → send welcome SMS
+```
+**Compensation**: On `SubscriptionActivationFailed` → Payment Service refunds → Order Service sets `CANCELLED`.
+
+## Domain Events Catalogue
+
+Always use these exact event names when publishing or consuming:
+
+```
+CustomerRegistered, CustomerKYCApproved, CustomerKYCRejected
+MSISDNAllocated, MSISDNReleased
+OrderCreated, OrderConfirmed, OrderCancelled
+SubscriptionActivated, SubscriptionSuspended, SubscriptionTerminated
+TariffChanged, AddonPurchased
+UsageRecorded, QuotaThresholdReached, QuotaExceeded
+InvoiceGenerated, InvoicePaid, InvoiceOverdue
+PaymentCompleted, PaymentFailed, PaymentRefunded
+TicketOpened, TicketAssigned, TicketResolved
+NotificationDispatched
+```
+
+## Gateway Trust Model
+
+- The `api-gateway` validates the JWT and injects `X-User-Id` and `X-User-Roles` headers into every downstream request.
+- Downstream microservices **must not** re-validate the JWT. They read identity from `X-User-Id` / `X-User-Roles` headers only.
+- In MVP, trust is implicit (gateway-behind model). mTLS is out of scope for MVP but should not be actively broken.
+
+## Stateless Services
+
+- Services must hold no in-memory session state between requests.
+- Store session-related data (rate limit counters, idempotency keys, token blacklist) in Redis, not in the service heap.
+- This enables horizontal scaling via Kubernetes HPA.
+
+## MVP Scope Boundaries
+
+**In scope**: Individual customer onboarding, postpaid tariff ordering, monthly billing, credit card payment (mock PSP), SMS/email notifications (mock), quota tracking, basic ticketing, product catalog CRUD.
+
+**Out of scope (do not implement)**: Prepaid top-up, MNP, corporate customer management, campaign engine, BTK regulatory reports, roaming, mobile app.

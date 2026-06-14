@@ -1,0 +1,64 @@
+---
+description: Authoritative technology stack versions and module structure for the Telco CRM platform
+alwaysApply: true
+---
+
+# Telco CRM — Technology Stack
+
+## Version Constraints
+
+> **CONFLICT — Document vs. Project:**
+> - The design document specifies Spring Boot `3.3.x` and Spring Cloud `2023.0.x`.
+> - The actual `pom.xml` uses **Spring Boot `4.0.6`** and **Spring Cloud `2025.1.1`**. Use the pom.xml versions — they are authoritative.
+> - The design document mentions Kafka `3.7+`; the docker-compose file pins **`bitnami/kafka:3.9.0`**. Use `3.9.0`.
+
+| Layer | Technology | Version |
+|---|---|---|
+| Language | Java (LTS) | **21** |
+| Framework | Spring Boot | **4.0.6** |
+| Cloud | Spring Cloud | **2025.1.1** |
+| Mapping | MapStruct | **1.6.3** |
+| API Docs | springdoc-openapi | **2.8.6** |
+| JWT | jjwt (io.jsonwebtoken) | **0.12.6** |
+| Database | PostgreSQL | **16** |
+| Broker | Apache Kafka (KRaft, Bitnami) | **3.9.0** |
+| Cache | Redis | **7** |
+| Tracing | Zipkin | latest |
+| Build | Maven (multi-module) | — |
+
+## Maven Coordinates
+
+- **groupId**: `com.turkcell.springmicroservices`
+- **Root artifact**: `telco-crm-platform`
+- **Version**: `1.0.0-SNAPSHOT`
+
+## Module Inventory
+
+| Module | Port | Role |
+|---|---|---|
+| `common-core` | — | Pure shared contracts: event names/payloads, header constants, RFC 7807 error model, shared exceptions/enums. No web/JPA deps (safe for the reactive `api-gateway`) |
+| `common-web` | — | Servlet-stack shared layer: global RFC 7807 exception handler, correlation-id MDC filter, gateway-header user context resolver. Depends on `common-core` |
+| `common-persistence` | — | JPA-stack shared layer: `BaseEntity` + JPA auditing, transactional outbox, idempotent-consumer support, PII encryption converter. Depends on `common-core` |
+| `discovery-server` | 8761 | Netflix Eureka registry |
+| `config-server` | 8888 | Spring Cloud Config (git-backed: `config-repo/`) |
+| `api-gateway` | 8080 | Edge routing, JWT validation, rate limiting |
+| `identity-service` | 9001 | Auth, JWT issuance, User/Role/Permission |
+| `customer-service` | 9002 | Customer lifecycle, KYC, Address, Document |
+| `product-catalog-service` | 9003 | Tariff, Addon, ProductOffering |
+| `order-service` | 9004 | Order orchestration, SagaState |
+| `subscription-service` | 9005 | Subscription, MSISDN, SimCard |
+| `usage-service` | 9006 | UsageRecord, Quota, CDR consumption |
+| `billing-service` | 9007 | Invoice, InvoiceLine, BillCycle |
+| `payment-service` | 9008 | Payment, PaymentAttempt, Wallet |
+| `notification-service` | 9009 | Notification, Template, Channel |
+| `ticket-service` | 9010 | Ticket, Comment, SLA |
+
+## Critical Dependency Rules
+
+- `api-gateway` **must** use `spring-boot-starter-webflux` and `spring-cloud-starter-gateway-server-webflux`. Never add `spring-boot-starter-web` to the gateway module.
+- All other services use `spring-boot-starter-web` (servlet stack).
+- Always declare dependency versions in the root `pom.xml` `<dependencyManagement>` block; never hardcode versions in module POMs.
+- The shared `common-core`, `common-web`, and `common-persistence` modules are plain JARs (no `spring-boot-maven-plugin` repackage); all other service modules are executable Spring Boot fat JARs.
+- `common-core` must never depend on `spring-boot-starter-web`/`webflux` or JPA, so it can be consumed by both servlet services and the reactive `api-gateway`.
+- Servlet microservices depend on `common-web` and `common-persistence` (both transitively include `common-core`). The `api-gateway` may depend only on `common-core` — never on `common-web` or `common-persistence` (their servlet/JPA deps would break the reactive gateway).
+- Annotation processors (MapStruct, Lombok) must be declared in `<annotationProcessorPaths>` of `maven-compiler-plugin`, not as regular dependencies.

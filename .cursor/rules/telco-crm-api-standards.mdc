@@ -1,0 +1,99 @@
+---
+description: REST API design standards for all Telco CRM microservices
+globs: **/*.java
+alwaysApply: false
+---
+
+# Telco CRM — REST API Standards
+
+## URL Structure
+
+- Always prefix all REST endpoints with `/api/v1/`.
+- Use URI-based versioning only. Never use header-based or query-param versioning.
+- Resource names must be **plural nouns**: `/customers`, `/orders`, `/subscriptions`, `/invoices`.
+- Sub-resources follow the parent: `/customers/{id}/addresses`, `/tickets/{id}/comments`.
+
+```java
+// ✅ GOOD
+@RequestMapping("/api/v1/customers")
+
+// ❌ BAD
+@RequestMapping("/api/customer")
+@RequestMapping("/v1/api/customer")
+```
+
+## HTTP Method Semantics
+
+| Method | Use for |
+|---|---|
+| `GET` | Read-only retrieval; must have no side effects |
+| `POST` | Create a resource or trigger a command |
+| `PUT` | Full replacement of a resource |
+| `PATCH` | Partial update of a resource |
+| `DELETE` | Soft delete only (set `deletedAt`; never physical removal for customer data) |
+
+## Error Format — RFC 7807 Problem Details
+
+All error responses must conform to RFC 7807. Never return plain strings or custom error envelopes.
+
+```json
+{
+  "type": "https://telco.example/errors/customer-not-found",
+  "title": "Customer not found",
+  "status": 404,
+  "detail": "Customer with id 1234 does not exist",
+  "instance": "/api/v1/customers/1234",
+  "correlationId": "9f3c1b..."
+}
+```
+
+## Pagination
+
+Always use Spring Data `Pageable` for list endpoints. Never return unbounded lists.
+
+```java
+// ✅ GOOD
+@GetMapping
+public Page<CustomerResponse> list(Pageable pageable) { ... }
+// Default: ?page=0&size=20&sort=createdAt,desc
+```
+
+## Required Headers
+
+| Header | Direction | Applies to |
+|---|---|---|
+| `Idempotency-Key` | Request (client → service) | All POST endpoints in `payment-service` and `order-service` |
+| `Correlation-Id` | Injected by gateway | All services; must be propagated to all log entries |
+| `X-User-Id` | Injected by gateway | All authenticated requests |
+| `X-User-Roles` | Injected by gateway | All authenticated requests |
+
+```java
+// ✅ Always read identity from gateway-injected headers
+@GetMapping("/{id}")
+public ResponseEntity<OrderResponse> get(
+    @PathVariable UUID id,
+    @RequestHeader("X-User-Id") String userId) { ... }
+```
+
+## Data Type Conventions
+
+- **Dates**: Always use ISO-8601 UTC (`OffsetDateTime` or `Instant`). Never use `java.util.Date` or epoch longs in DTOs.
+- **Money**: Use `BigDecimal` for amounts. Always include a separate `currency` field with value `"TRY"`. Never use `double` or `float` for monetary values.
+- **IDs**: Use `UUID` as the primary key type on all entities and DTOs.
+
+```java
+// ✅ GOOD
+private BigDecimal amount;
+private String currency = "TRY";
+private OffsetDateTime createdAt;
+
+// ❌ BAD
+private double amount;
+private long createdAt;
+```
+
+## Performance Target
+
+- p95 API response time must be below **300 ms**.
+- Wrap all outbound OpenFeign calls with Resilience4j circuit breaker and retry.
+- Cache product catalog reads in Redis to avoid repeated synchronous calls during order creation.

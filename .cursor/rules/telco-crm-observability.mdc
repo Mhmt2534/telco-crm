@@ -1,0 +1,66 @@
+---
+description: Observability standards for logging, distributed tracing, and metrics across all Telco CRM services
+alwaysApply: true
+---
+
+# Telco CRM — Observability
+
+## Structured Logging
+
+- All services must emit **structured JSON logs**. Never use plaintext log formatting in any deployed environment.
+- Every log entry must include: `correlationId`, `userId`, `serviceName`, log level, timestamp (UTC), and message.
+- The `correlationId` is injected by the gateway as a request header. Read it from the `MDC` context and include it in every log line.
+- Do not log raw PII (TCKN, card numbers, passwords). Log IDs and masked values only.
+
+```yaml
+# logback-spring.xml — use JSON encoder (e.g., logstash-logback-encoder)
+# Ensure MDC keys correlationId and userId are mapped to JSON fields
+```
+
+## Distributed Tracing
+
+- All services use **Micrometer + OpenTelemetry** bridge (`micrometer-tracing-bridge-otel`) with Zipkin as the backend.
+- Zipkin runs at `http://zipkin:9411` (Docker Compose service name `telco-zipkin`).
+- Tracing sampling probability: `1.0` in local/development (`management.tracing.sampling.probability: 1.0`). Reduce to `0.1` or lower in production to control overhead.
+- The sampling configuration is in the global `config-repo/application.yml` and must not be overridden per-service without a documented reason.
+
+```yaml
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+```
+
+## Actuator Endpoints
+
+Every service must expose the following actuator endpoints (already configured globally in `config-repo/application.yml`):
+
+```yaml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+```
+
+- Never disable the `health` endpoint. It is used by Docker Compose health checks and Kubernetes liveness/readiness probes.
+- The `prometheus` endpoint feeds the Prometheus + Grafana metrics stack. Always include `spring-boot-starter-actuator` in every service POM.
+
+## Metrics
+
+- Use Prometheus for metrics collection and Grafana for dashboards.
+- Instrument custom business metrics where relevant (e.g., orders created per minute, payment failure rate, CDR processing lag).
+- Prefer Micrometer `Counter`, `Timer`, and `Gauge` APIs over manual metric handling.
+
+## Centralized Log Aggregation
+
+- Ship logs to a centralized backend: **ELK stack** (Elasticsearch + Logstash + Kibana) or **Grafana Loki**.
+- Do not rely on local file logs as the primary log store in any environment beyond local developer machines.
+
+## Key Observability Infrastructure (Docker Compose)
+
+| Component | Image | Port |
+|---|---|---|
+| Zipkin | `openzipkin/zipkin:latest` | `9411` |
+| Prometheus | (not in current compose — add in production) | `9090` |
+| Grafana | (not in current compose — add in production) | `3000` |
