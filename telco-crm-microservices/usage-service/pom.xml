@@ -18,10 +18,14 @@
     <description>Core CDR Usage Processing and Quota Balance Tracking Service</description>
 
     <dependencies>
-        <!-- Internal Common Library dependency -->
+        <!-- Internal Shared Modules: common-web + common-persistence (both pull common-core transitively) -->
         <dependency>
             <groupId>com.turkcell.springmicroservices</groupId>
-            <artifactId>common-library</artifactId>
+            <artifactId>common-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.turkcell.springmicroservices</groupId>
+            <artifactId>common-persistence</artifactId>
         </dependency>
 
         <!-- Web -->

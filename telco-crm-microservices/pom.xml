@@ -33,7 +33,9 @@
     </properties>
 
     <modules>
-        <module>common-library</module>
+        <module>common-core</module>
+        <module>common-web</module>
+        <module>common-persistence</module>
         <module>discovery-server</module>
         <module>config-server</module>
         <module>api-gateway</module>
@@ -60,10 +62,20 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Internal Library Module -->
+            <!-- Internal Shared Modules (3-layer split) -->
             <dependency>
                 <groupId>com.turkcell.springmicroservices</groupId>
-                <artifactId>common-library</artifactId>
+                <artifactId>common-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.turkcell.springmicroservices</groupId>
+                <artifactId>common-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.turkcell.springmicroservices</groupId>
+                <artifactId>common-persistence</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -135,6 +147,11 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                         <annotationProcessorPaths>
+                            <!-- Lombok annotation processor (version managed by spring-boot-starter-parent) -->
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </path>
                             <!-- MapStruct annotation processor -->
                             <path>
                                 <groupId>org.mapstruct</groupId>

@@ -18,6 +18,12 @@
     <description>Reactive API Gateway Router and Edge Service</description>
 
     <dependencies>
+        <!-- Internal Shared Module: common-core ONLY (no servlet/JPA deps - safe for the reactive gateway) -->
+        <dependency>
+            <groupId>com.turkcell.springmicroservices</groupId>
+            <artifactId>common-core</artifactId>
+        </dependency>
+
         <!-- Spring Boot Starter WebFlux (CRITICAL: Do NOT use spring-boot-starter-web here) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
