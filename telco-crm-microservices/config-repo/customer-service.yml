@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/customer_db
-    username: postgres
-    password: 1234
+    url: jdbc:postgresql://localhost:5433/customer_db
+    username: telco_admin
+    password: telco_password
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -14,6 +14,6 @@ spring:
         format_sql: true
   flyway:
     enabled: true
-    url: jdbc:postgresql://localhost:5432/customer_db
-    user: postgres
-    password: 1234
+    url: jdbc:postgresql://localhost:5433/customer_db
+    user: telco_admin
+    password: telco_password
