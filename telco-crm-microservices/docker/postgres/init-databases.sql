@@ -1,7 +1,7 @@
 -- Init script to create multiple databases for Telco CRM Platform
 CREATE DATABASE identity_db;
 CREATE DATABASE customer_db;
-CREATE DATABASE catalog_db;
+CREATE DATABASE product_catalog_db;
 CREATE DATABASE order_db;
 CREATE DATABASE subscription_db;
 CREATE DATABASE usage_db;

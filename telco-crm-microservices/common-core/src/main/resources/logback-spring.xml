@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shared structured-logging configuration for ALL Telco CRM services.
+  Lives in common-core so every module (servlet services + reactive gateway) inherits it
+  from the classpath. Emits one JSON object per log line including MDC keys correlationId
+  and userId (populated by the correlation filter / gateway).
+-->
+<configuration>
+
+    <springProperty scope="context" name="serviceName" source="spring.application.name" defaultValue="unknown-service"/>
+
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <timeZone>UTC</timeZone>
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <customFields>{"serviceName":"${serviceName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+
+</configuration>

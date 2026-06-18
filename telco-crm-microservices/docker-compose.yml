@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ──── PostgreSQL ────
   postgres:
@@ -10,7 +8,7 @@ services:
       POSTGRES_PASSWORD: telco_password
       POSTGRES_DB: telco_default
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     healthcheck:
@@ -20,8 +18,10 @@ services:
       retries: 5
 
   # ──── Apache Kafka (KRaft mode) ────
+  # NOTE: Bitnami moved versioned tags to the `bitnamilegacy` namespace (Aug 2025).
+  # `bitnami/kafka:3.9.0` is no longer pullable; use the archived legacy image.
   kafka:
-    image: bitnami/kafka:3.9.0
+    image: bitnamilegacy/kafka:3.9.0
     container_name: telco-kafka
     ports:
       - "9092:9092"
@@ -62,3 +62,44 @@ services:
       - "9411:9411"
     environment:
       - STORAGE_TYPE=mem
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Developer tooling (local only). Started only with the `tools` profile:
+  #   docker compose --profile tools up -d
+  # Plain `docker compose up -d` keeps starting just the core services above.
+  # ════════════════════════════════════════════════════════════════════════
+
+  # ──── Kafka UI ──── http://localhost:8085 (container port 8080 -> 8085 to avoid gateway clash)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: telco-kafka-ui
+    profiles: ["tools"]
+    ports:
+      - "8085:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=telco-local
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:29092
+      - DYNAMIC_CONFIG_ENABLED=true
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # ──── Mailpit ──── web UI http://localhost:8025, SMTP localhost:1025 (mock e-mail sink)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: telco-mailpit
+    profiles: ["tools"]
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  # ──── RedisInsight ──── http://localhost:5540 (add connection manually: host `redis`, port 6379)
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: telco-redisinsight
+    profiles: ["tools"]
+    ports:
+      - "5540:5540"
+    depends_on:
+      redis:
+        condition: service_healthy

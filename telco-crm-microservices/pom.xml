@@ -30,6 +30,8 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <springdoc-openapi.version>2.8.6</springdoc-openapi.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
     </properties>
 
     <modules>
@@ -123,17 +125,28 @@
                 <scope>runtime</scope>
             </dependency>
 
-            <!-- Distributed Tracing -->
+            <!-- Distributed tracing artifacts (micrometer-tracing-bridge-otel,
+                 opentelemetry-exporter-zipkin) are version-managed by the Spring Boot BOM
+                 inherited from the parent; declare them as dependencies without a version. -->
+
+            <!-- Structured JSON logging encoder (not managed by Spring Boot BOM) -->
             <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-tracing-bridge-otel</artifactId>
-            </dependency>
-            <dependency>
-                <groupId>io.zipkin.reporter2</groupId>
-                <artifactId>zipkin-reporter-brave</artifactId>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback-encoder.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <!-- Global dependencies inherited by every module -->
+    <dependencies>
+        <!-- Lombok available on the compile classpath of all modules (annotations are not transitive) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
@@ -157,6 +170,12 @@
                                 <groupId>org.mapstruct</groupId>
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>${mapstruct.version}</version>
+                            </path>
+                            <!-- Lombok <-> MapStruct binding so generated mappers see Lombok accessors -->
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok-mapstruct-binding</artifactId>
+                                <version>${lombok-mapstruct-binding.version}</version>
                             </path>
                         </annotationProcessorPaths>
                     </configuration>

@@ -141,3 +141,6 @@ jacoco.exec
 
 generated/
 **/generated/
+
+
+*.ps1
