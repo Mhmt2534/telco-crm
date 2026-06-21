@@ -28,7 +28,7 @@ alwaysApply: true
 
 ## Maven Coordinates
 
-- **groupId**: `com.turkcell.springmicroservices`
+- **groupId**: `com.telcox.springmicroservices`
 - **Root artifact**: `telco-crm-platform`
 - **Version**: `1.0.0-SNAPSHOT`
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -11,7 +11,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>com.turkcell.springmicroservices</groupId>
+    <groupId>com.telcox.springmicroservices</groupId>
     <artifactId>telco-crm-platform</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -66,17 +66,17 @@
 
             <!-- Internal Shared Modules (3-layer split) -->
             <dependency>
-                <groupId>com.turkcell.springmicroservices</groupId>
+                <groupId>com.telcox.springmicroservices</groupId>
                 <artifactId>common-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.turkcell.springmicroservices</groupId>
+                <groupId>com.telcox.springmicroservices</groupId>
                 <artifactId>common-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.turkcell.springmicroservices</groupId>
+                <groupId>com.telcox.springmicroservices</groupId>
                 <artifactId>common-persistence</artifactId>
                 <version>${project.version}</version>
             </dependency>

@@ -1,1 +1,1 @@
-com.telcocrm.common.persistence.config.JpaAuditingAutoConfiguration
+com.telcox.common.persistence.config.JpaAuditingAutoConfiguration

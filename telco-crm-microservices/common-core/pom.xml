@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.turkcell.springmicroservices</groupId>
+        <groupId>com.telcox.springmicroservices</groupId>
         <artifactId>telco-crm-platform</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
