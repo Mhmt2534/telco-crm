@@ -1,21 +1,205 @@
 services:
-  # ──── PostgreSQL ────
-  postgres:
-    image: postgres:16-alpine
-    container_name: telco-postgres
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Database Per Service — each microservice owns an isolated PostgreSQL
+  # instance. Services must never connect to another service's database.
+  # Internal hostname  : <service-name>:5432
+  # Host (dev) port    : see table below
+  # ════════════════════════════════════════════════════════════════════════
+
+  # ──── identity-service DB  (host: 5433) ────
+  identity-db:
+    image: postgres:17
+    container_name: identity-db
     environment:
-      POSTGRES_USER: telco_admin
-      POSTGRES_PASSWORD: telco_password
-      POSTGRES_DB: telco_default
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: identity_db
     ports:
       - "5433:5432"
     volumes:
-      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+      - identity-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U telco_admin -d telco_default"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d identity_db"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  # ──── customer-service DB  (host: 5434) ────
+  customer-db:
+    image: postgres:17
+    container_name: customer-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: customer_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - customer-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d customer_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── product-catalog-service DB  (host: 5435) ────
+  product-db:
+    image: postgres:17
+    container_name: product-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: product_catalog_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d product_catalog_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── order-service DB  (host: 5436) ────
+  order-db:
+    image: postgres:17
+    container_name: order-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: order_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d order_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── subscription-service DB  (host: 5437) ────
+  subscription-db:
+    image: postgres:17
+    container_name: subscription-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: subscription_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - subscription-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d subscription_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── billing-service DB  (host: 5438) ────
+  billing-db:
+    image: postgres:17
+    container_name: billing-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: billing_db
+    ports:
+      - "5438:5432"
+    volumes:
+      - billing-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d billing_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── usage-service DB  (host: 5439) ────
+  usage-db:
+    image: postgres:17
+    container_name: usage-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: usage_db
+    ports:
+      - "5439:5432"
+    volumes:
+      - usage-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d usage_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── notification-service DB  (host: 5440) ────
+  notification-db:
+    image: postgres:17
+    container_name: notification-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notification_db
+    ports:
+      - "5440:5432"
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notification_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── ticket-service DB  (host: 5441) ────
+  ticket-db:
+    image: postgres:17
+    container_name: ticket-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ticket_db
+    ports:
+      - "5441:5432"
+    volumes:
+      - ticket-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticket_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ──── payment-service DB  (host: 5442) ────
+  payment-db:
+    image: postgres:17
+    container_name: payment-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment_db
+    ports:
+      - "5442:5432"
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Messaging
+  # ════════════════════════════════════════════════════════════════════════
 
   # ──── Apache Kafka (KRaft mode) ────
   # NOTE: Bitnami moved versioned tags to the `bitnamilegacy` namespace (Aug 2025).
@@ -41,6 +225,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Cache
+  # ════════════════════════════════════════════════════════════════════════
 
   # ──── Redis ────
   redis:
@@ -53,6 +242,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Observability
+  # ════════════════════════════════════════════════════════════════════════
 
   # ──── Zipkin ────
   zipkin:
@@ -62,14 +256,15 @@ services:
       - "9411:9411"
     environment:
       - STORAGE_TYPE=mem
+    restart: unless-stopped
 
   # ════════════════════════════════════════════════════════════════════════
   # Developer tooling (local only). Started only with the `tools` profile:
   #   docker compose --profile tools up -d
-  # Plain `docker compose up -d` keeps starting just the core services above.
+  # Plain `docker compose up -d` starts only the core services above.
   # ════════════════════════════════════════════════════════════════════════
 
-  # ──── Kafka UI ──── http://localhost:8085 (container port 8080 -> 8085 to avoid gateway clash)
+  # ──── Kafka UI ──── http://localhost:8085 (8080 → 8085 to avoid gateway clash)
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: telco-kafka-ui
@@ -84,7 +279,7 @@ services:
       kafka:
         condition: service_healthy
 
-  # ──── Mailpit ──── web UI http://localhost:8025, SMTP localhost:1025 (mock e-mail sink)
+  # ──── Mailpit ──── web UI http://localhost:8025 · SMTP localhost:1025 (mock e-mail sink)
   mailpit:
     image: axllent/mailpit:latest
     container_name: telco-mailpit
@@ -93,7 +288,7 @@ services:
       - "8025:8025"
       - "1025:1025"
 
-  # ──── RedisInsight ──── http://localhost:5540 (add connection manually: host `redis`, port 6379)
+  # ──── RedisInsight ──── http://localhost:5540  (add connection: host `redis`, port 6379)
   redisinsight:
     image: redis/redisinsight:latest
     container_name: telco-redisinsight
@@ -103,3 +298,18 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+
+# ════════════════════════════════════════════════════════════════════════
+# Named volumes — one dedicated volume per database container
+# ════════════════════════════════════════════════════════════════════════
+volumes:
+  identity-db-data:
+  customer-db-data:
+  product-db-data:
+  order-db-data:
+  subscription-db-data:
+  billing-db-data:
+  usage-db-data:
+  notification-db-data:
+  ticket-db-data:
+  payment-db-data:
