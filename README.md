@@ -315,10 +315,27 @@ public void onOrderCreated(BaseDomainEventEnvelope<OrderCreatedPayload> event) {
 
 4. **Veritabanını Docker Compose'a ekle**
 
-   Her servis kendi schema'sını kullanır. `docker/postgres/init-databases.sql` dosyasına servise özel database oluşturma satırını ekle:
-   ```sql
-   CREATE DATABASE my_new_service_db;
+   Her servis kendi izole PostgreSQL container'ına sahiptir (Database Per Service). `docker-compose.yml` dosyasına yeni bir servis bloğu ekle:
+   ```yaml
+   my-new-service-db:
+     image: postgres:17
+     container_name: my-new-service-db
+     environment:
+       POSTGRES_USER: postgres
+       POSTGRES_PASSWORD: postgres
+       POSTGRES_DB: my_new_service_db
+     ports:
+       - "5443:5432"
+     volumes:
+       - my-new-service-db-data:/var/lib/postgresql/data
+     healthcheck:
+       test: ["CMD-SHELL", "pg_isready -U postgres -d my_new_service_db"]
+       interval: 5s
+       timeout: 5s
+       retries: 5
+     restart: unless-stopped
    ```
+   `volumes:` bölümüne `my-new-service-db-data:` satırını da ekle.
 
 5. **`application.yml` dosyasını `config-repo/` altına ekle**
 
@@ -368,11 +385,20 @@ public void onOrderCreated(BaseDomainEventEnvelope<OrderCreatedPayload> event) {
 | Notification Service | 9009 |
 | Ticket Service | 9010 |
 
-**Altyapı bileşenleri:**
+**Altyapı bileşenleri (Docker — host portları):**
 
-| Bileşen | Port | Açıklama |
+| Bileşen | Host Port | Açıklama |
 |---|---|---|
-| PostgreSQL | 5433 | Ana veritabanı (host port: 5433, container: 5432) |
+| identity-db | 5433 | `identity_db` — identity-service'e özel PostgreSQL |
+| customer-db | 5434 | `customer_db` — customer-service'e özel PostgreSQL |
+| product-db | 5435 | `product_catalog_db` — product-catalog-service'e özel PostgreSQL |
+| order-db | 5436 | `order_db` — order-service'e özel PostgreSQL |
+| subscription-db | 5437 | `subscription_db` — subscription-service'e özel PostgreSQL |
+| billing-db | 5438 | `billing_db` — billing-service'e özel PostgreSQL |
+| usage-db | 5439 | `usage_db` — usage-service'e özel PostgreSQL |
+| notification-db | 5440 | `notification_db` — notification-service'e özel PostgreSQL |
+| ticket-db | 5441 | `ticket_db` — ticket-service'e özel PostgreSQL |
+| payment-db | 5442 | `payment_db` — payment-service'e özel PostgreSQL |
 | Kafka | 9092 | Mesaj broker (KRaft modu, Zookeeper yok) |
 | Redis | 6379 | Cache ve idempotency store |
 | Zipkin | 9411 | Dağıtık tracing UI |

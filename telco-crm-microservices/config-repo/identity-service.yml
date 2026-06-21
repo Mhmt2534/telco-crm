@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/identity_db
-    username: telco_admin
-    password: telco_password
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -15,5 +15,5 @@ spring:
   flyway:
     enabled: true
     url: jdbc:postgresql://localhost:5433/identity_db
-    user: telco_admin
-    password: telco_password
+    user: postgres
+    password: postgres

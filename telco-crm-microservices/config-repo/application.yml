@@ -1,4 +1,7 @@
-# Global configurations for Telco CRM Platform services
+# Global configurations applied to all Telco CRM Platform services.
+# Services run on the HOST machine (java -jar); infrastructure runs in Docker.
+# All hostnames below resolve via Docker-published ports on localhost.
+# Service-specific overrides live in <service-name>.yml files.
 spring:
   kafka:
     bootstrap-servers: localhost:9092
