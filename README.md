@@ -421,3 +421,22 @@ docker compose --profile tools up -d
 
 > RedisInsight'a bağlanmak için manuel olarak `host: redis`, `port: 6379` bağlantısı eklemen gerekir.
 
+---
+
+## Ekstra not
+
+```bash
+docker pull maven:3.9-eclipse-temurin-21
+```
+
+```bash
+docker pull eclipse-temurin:21-jre
+```
+
+```bash
+docker compose build config-server
+```
+
+```bash
+docker compose up -d --build
+```

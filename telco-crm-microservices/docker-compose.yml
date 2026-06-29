@@ -25,6 +25,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -46,6 +50,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -67,6 +75,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -88,6 +100,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -109,6 +125,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -130,6 +150,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -151,6 +175,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -172,6 +200,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -193,6 +225,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -214,6 +250,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     networks:
       - telco-net
 
@@ -240,12 +280,18 @@ services:
       - KAFKA_KRAFT_CLUSTER_ID=NjZkNTY0NzZkYjFhNDhjNw
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      # Cap the broker heap so it comfortably fits the memory limit below.
+      - KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
     networks:
       - telco-net
 
@@ -265,6 +311,10 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 192m
     networks:
       - telco-net
 
@@ -281,6 +331,73 @@ services:
     environment:
       - STORAGE_TYPE=mem
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    networks:
+      - telco-net
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Platform infrastructure — Service Discovery (Eureka) + Centralized Config.
+  # Built from the shared multi-stage Dockerfile via the SERVICE build-arg.
+  # These start before the business microservices.
+  # ════════════════════════════════════════════════════════════════════════
+
+  # ──── Eureka Discovery Server (8761) ────
+  discovery-server:
+    build:
+      context: .
+      args:
+        SERVICE: discovery-server
+    container_name: discovery-server
+    environment:
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+    healthcheck:
+      # Dashboard/actuator are secured (basic auth) — treat 200/401 as "up".
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8761/actuator/health | grep -qE '200|401'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    networks:
+      - telco-net
+
+  # ──── Spring Cloud Config Server (8888, native profile) ────
+  config-server:
+    build:
+      context: .
+      args:
+        SERVICE: config-server
+    container_name: config-server
+    environment:
+      # Read the git-backed config-repo from the bind-mounted path inside the container.
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS: file:/config-repo
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+    volumes:
+      - ./config-repo:/config-repo:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8888/actuator/health | grep -qE '200|401'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     networks:
       - telco-net
 
@@ -304,6 +421,10 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     networks:
       - telco-net
 
@@ -315,6 +436,10 @@ services:
     ports:
       - "8025:8025"
       - "1025:1025"
+    deploy:
+      resources:
+        limits:
+          memory: 128m
     networks:
       - telco-net
 
@@ -328,24 +453,38 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 320m
     networks:
       - telco-net
 
   # ════════════════════════════════════════════════════════════════════════
   # Spring Boot microservices — internal only (no host ports / no expose).
   # Reachable solely over the `telco-net` Docker network. Only the api-gateway
-  # is published to the host.
+  # is published to the host. Each is built from the shared Dockerfile via the
+  # SERVICE build-arg. In-container hostnames override the localhost-based
+  # values in config-repo (which target host-run services).
   # ════════════════════════════════════════════════════════════════════════
 
-  # ──── identity-service ────
+  # ──── identity-service (9001) ────
   identity-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: identity-service
     container_name: identity-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://identity-db:5432/identity_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://identity-db:5432/identity_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       identity-db:
         condition: service_healthy
@@ -355,18 +494,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9001/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── customer-service ────
+  # ──── customer-service (9002) ────
   customer-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: customer-service
     container_name: customer-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://customer-db:5432/customer_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://customer-db:5432/customer_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       customer-db:
         condition: service_healthy
@@ -376,18 +538,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9002/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── product-catalog-service ────
+  # ──── product-catalog-service (9003) ────
   product-catalog-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: product-catalog-service
     container_name: product-catalog-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/product_catalog_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://product-db:5432/product_catalog_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       product-db:
         condition: service_healthy
@@ -397,18 +582,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9003/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── order-service ────
+  # ──── order-service (9004) ────
   order-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: order-service
     container_name: order-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://order-db:5432/order_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       order-db:
         condition: service_healthy
@@ -418,18 +626,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9004/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── subscription-service ────
+  # ──── subscription-service (9005) ────
   subscription-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: subscription-service
     container_name: subscription-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://subscription-db:5432/subscription_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://subscription-db:5432/subscription_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       subscription-db:
         condition: service_healthy
@@ -439,18 +670,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9005/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── billing-service ────
+  # ──── billing-service (9007) ────
   billing-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: billing-service
     container_name: billing-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://billing-db:5432/billing_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://billing-db:5432/billing_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       billing-db:
         condition: service_healthy
@@ -460,18 +714,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9007/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── usage-service ────
+  # ──── usage-service (9006) ────
   usage-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: usage-service
     container_name: usage-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://usage-db:5432/usage_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://usage-db:5432/usage_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       usage-db:
         condition: service_healthy
@@ -481,18 +758,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9006/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── notification-service ────
+  # ──── notification-service (9009) ────
   notification-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: notification-service
     container_name: notification-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://notification-db:5432/notification_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       notification-db:
         condition: service_healthy
@@ -502,18 +802,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9009/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── ticket-service ────
+  # ──── ticket-service (9010) ────
   ticket-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: ticket-service
     container_name: ticket-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-db:5432/ticket_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://ticket-db:5432/ticket_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       ticket-db:
         condition: service_healthy
@@ -523,18 +846,41 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9010/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
-  # ──── payment-service ────
+  # ──── payment-service (9008) ────
   payment-service:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: payment-service
     container_name: payment-service
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
+      SPRING_FLYWAY_URL: jdbc:postgresql://payment-db:5432/payment_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       payment-db:
         condition: service_healthy
@@ -544,45 +890,78 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9008/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     networks:
       - telco-net
 
   # ════════════════════════════════════════════════════════════════════════
   # API Gateway — the only service published to the host (port 8080).
-  # Starts last, after all downstream microservices are up.
+  # Starts last, after all downstream microservices are healthy.
   # ════════════════════════════════════════════════════════════════════════
 
-  # ──── api-gateway ────
+  # ──── api-gateway (8080) ────
   api-gateway:
-    # TODO: build veya image bilgisi eklenmeli.
+    build:
+      context: .
+      args:
+        SERVICE: api-gateway
     container_name: api-gateway
     ports:
       - "8080:8080"
     environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:eureka@discovery-server:8761/eureka/
+      # Size the JVM heap to the container memory limit (local-dev footprint).
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
       identity-service:
-        condition: service_started
+        condition: service_healthy
       customer-service:
-        condition: service_started
+        condition: service_healthy
       product-catalog-service:
-        condition: service_started
+        condition: service_healthy
       order-service:
-        condition: service_started
+        condition: service_healthy
       subscription-service:
-        condition: service_started
+        condition: service_healthy
       billing-service:
-        condition: service_started
+        condition: service_healthy
       usage-service:
-        condition: service_started
+        condition: service_healthy
       notification-service:
-        condition: service_started
+        condition: service_healthy
       ticket-service:
-        condition: service_started
+        condition: service_healthy
       payment-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 640m
     networks:
       - telco-net
 
