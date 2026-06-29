@@ -25,6 +25,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── customer-service DB  (host: 5434) ────
   customer-db:
@@ -44,6 +46,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── product-catalog-service DB  (host: 5435) ────
   product-db:
@@ -63,6 +67,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── order-service DB  (host: 5436) ────
   order-db:
@@ -82,6 +88,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── subscription-service DB  (host: 5437) ────
   subscription-db:
@@ -101,6 +109,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── billing-service DB  (host: 5438) ────
   billing-db:
@@ -120,6 +130,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── usage-service DB  (host: 5439) ────
   usage-db:
@@ -139,6 +151,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── notification-service DB  (host: 5440) ────
   notification-db:
@@ -158,6 +172,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── ticket-service DB  (host: 5441) ────
   ticket-db:
@@ -177,6 +193,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ──── payment-service DB  (host: 5442) ────
   payment-db:
@@ -196,6 +214,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ════════════════════════════════════════════════════════════════════════
   # Messaging
@@ -226,6 +246,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ════════════════════════════════════════════════════════════════════════
   # Cache
@@ -243,6 +265,8 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ════════════════════════════════════════════════════════════════════════
   # Observability
@@ -257,6 +281,8 @@ services:
     environment:
       - STORAGE_TYPE=mem
     restart: unless-stopped
+    networks:
+      - telco-net
 
   # ════════════════════════════════════════════════════════════════════════
   # Developer tooling (local only). Started only with the `tools` profile:
@@ -278,6 +304,8 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    networks:
+      - telco-net
 
   # ──── Mailpit ──── web UI http://localhost:8025 · SMTP localhost:1025 (mock e-mail sink)
   mailpit:
@@ -287,6 +315,8 @@ services:
     ports:
       - "8025:8025"
       - "1025:1025"
+    networks:
+      - telco-net
 
   # ──── RedisInsight ──── http://localhost:5540  (add connection: host `redis`, port 6379)
   redisinsight:
@@ -298,6 +328,270 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    networks:
+      - telco-net
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Spring Boot microservices — internal only (no host ports / no expose).
+  # Reachable solely over the `telco-net` Docker network. Only the api-gateway
+  # is published to the host.
+  # ════════════════════════════════════════════════════════════════════════
+
+  # ──── identity-service ────
+  identity-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: identity-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://identity-db:5432/identity_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── customer-service ────
+  customer-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: customer-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://customer-db:5432/customer_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      customer-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── product-catalog-service ────
+  product-catalog-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: product-catalog-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/product_catalog_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      product-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── order-service ────
+  order-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: order-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      order-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── subscription-service ────
+  subscription-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: subscription-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://subscription-db:5432/subscription_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      subscription-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── billing-service ────
+  billing-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: billing-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://billing-db:5432/billing_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      billing-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── usage-service ────
+  usage-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: usage-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://usage-db:5432/usage_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      usage-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── notification-service ────
+  notification-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: notification-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── ticket-service ────
+  ticket-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: ticket-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-db:5432/ticket_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      ticket-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ──── payment-service ────
+  payment-service:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - telco-net
+
+  # ════════════════════════════════════════════════════════════════════════
+  # API Gateway — the only service published to the host (port 8080).
+  # Starts last, after all downstream microservices are up.
+  # ════════════════════════════════════════════════════════════════════════
+
+  # ──── api-gateway ────
+  api-gateway:
+    # TODO: build veya image bilgisi eklenmeli.
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    depends_on:
+      identity-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      product-catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      subscription-service:
+        condition: service_started
+      billing-service:
+        condition: service_started
+      usage-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      ticket-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    networks:
+      - telco-net
+
+# ════════════════════════════════════════════════════════════════════════
+# Networks
+# ════════════════════════════════════════════════════════════════════════
+networks:
+  telco-net:
+    driver: bridge
 
 # ════════════════════════════════════════════════════════════════════════
 # Named volumes — one dedicated volume per database container
