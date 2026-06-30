@@ -391,8 +391,9 @@ services:
     ports:
       - "8888:8888"
     environment:
-      # Read the git-backed config-repo from the bind-mounted path inside the container.
-      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS: file:/config-repo
+      # Folder-based config-repo: service-specific + global paths
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_0: file:/config-repo/configs/{application}
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_1: file:/config-repo/configs
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"

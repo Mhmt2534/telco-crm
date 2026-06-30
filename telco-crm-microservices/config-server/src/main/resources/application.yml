@@ -4,13 +4,28 @@ server:
 spring:
   application:
     name: config-server
+  profiles:
+    active: ${CONFIG_SERVER_PROFILE:native}
   cloud:
     config:
       server:
         native:
-          search-locations: classpath:/config-repo, file:${user.dir}/../config-repo, file:${user.dir}/config-repo
-  profiles:
-    active: native
+          search-locations:
+            - file:${user.dir}/../config-repo/configs/{application}
+            - file:${user.dir}/../config-repo/configs
+            - file:${user.dir}/config-repo/configs/{application}
+            - file:${user.dir}/config-repo/configs
+            - classpath:/config-repo/configs/{application}
+            - classpath:/config-repo/configs
+        git:
+          uri: ${GIT_CONFIG_REPO_URI:}
+          username: ${GIT_CONFIG_USERNAME:}
+          password: ${GIT_CONFIG_PASSWORD:}
+          search-paths:
+            - configs/{application}
+            - configs
+          default-label: ${GIT_CONFIG_LABEL:main}
+          clone-on-start: true
 
 eureka:
   client:

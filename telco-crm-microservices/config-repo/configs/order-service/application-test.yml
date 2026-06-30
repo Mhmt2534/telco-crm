@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5436/order_test_db}
+    username: ${TEST_DB_USERNAME:postgres}
+    password: ${TEST_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  flyway:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5436/order_test_db}
+    user: ${TEST_DB_USERNAME:postgres}
+    password: ${TEST_DB_PASSWORD:postgres}
+
+logging:
+  level:
+    root: WARN
+    com.telcox: DEBUG
