@@ -117,7 +117,7 @@ telco-crm-microservices/
 | Araç           | Minimum Versiyon                              |
 | -------------- | --------------------------------------------- |
 | Java           | **21**                                        |
-| Maven          | **3.9+**                                      |
+| Maven          | **3.9+** (repoda Maven Wrapper `./mvnw` gömülü — kurulu Maven şart değil) |
 | Docker         | **24+**                                       |
 | Docker Compose | **2.x** (Compose V2, `docker compose` komutu) |
 
@@ -145,10 +145,29 @@ Tüm servisler `healthy` olana kadar bekle (yaklaşık 30-60 saniye).
 
 ### 2. Tüm modülleri derle
 
+Proje, sabit Maven sürümünü (`3.9.10`) garanti eden bir **Maven Wrapper** içerir. Kurulu bir Maven'a ihtiyaç duymadan wrapper'ı kullan:
+
 ```bash
-mvn clean install -DskipTests
+# Linux / macOS
+./mvnw clean install
+
+# Windows (PowerShell / CMD)
+.\mvnw.cmd clean install
 ```
 
+İlk kurulumda build süresini kısaltmak için testleri atlayabilirsin:
+
+```bash
+./mvnw clean install -DskipTests
+```
+
+Tek bir servisi wrapper ile çalıştırmak için:
+
+```bash
+./mvnw -pl identity-service spring-boot:run
+```
+
+> Kurulu Maven kullanmak istersen `./mvnw` yerine `mvn` yazabilirsin; davranış aynıdır.
 > `-DskipTests` flag'i ilk kurulumda build süresini kısaltır. Test koşmak istersen çıkart.
 
 ### 3. Config Server ve Discovery Server'ı başlat
