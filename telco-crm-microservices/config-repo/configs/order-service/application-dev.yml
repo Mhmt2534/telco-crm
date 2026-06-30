@@ -5,15 +5,18 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: validate
     show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
   flyway:
-    enabled: true
     url: jdbc:postgresql://localhost:5436/order_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.telcox: DEBUG
