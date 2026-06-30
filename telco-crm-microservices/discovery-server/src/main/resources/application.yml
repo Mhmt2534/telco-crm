@@ -15,5 +15,5 @@ spring:
     name: discovery-server
   security:
     user:
-      name: eureka
-      password: eureka
+      name: ${EUREKA_USERNAME:eureka}
+      password: ${EUREKA_PASSWORD:eureka}
