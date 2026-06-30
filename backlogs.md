@@ -28,9 +28,37 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 ## 📌 LİSTE: SPRINT 1 — HAFTA 1: Temel Servisler & Veri Katmanı
 
-### KART 01: [IDENTITY] JWT Auth & Redis Blacklist Mekanizması
+---
+### KART 0.1: [INFRASTRUCTURE] Keycloak Ortak Altyapı Kurulumu (GÜNCELLENDİ)
 
-* **Açıklama:** Kullanıcıların sisteme güvenli giriş yapabilmesi ve çıkış yaptıklarında token'larının geçersiz kılınması için kimlik doğrulama sisteminin kurulması.
+* **Açıklama:** Mevcut Docker Compose altyapısına Keycloak sunucusunun eklenmesi ve projeye özel rollerin ayarlanması.
+
+* **Atanan Kişi:** Ahmet · Tech Lead
+
+
+* **Öncelik:** Yüksek
+
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] Merkezi docker-compose.yml dosyasına Keycloak imajı eklenmeli ve PostgreSQL veritabanına bağlanacak şekilde yapılandırılmalı.
+
+
+* [ ] Keycloak admin paneline girilerek proje için yeni bir Realm (Örn: telco-crm-realm) oluşturulmalı.
+
+
+* [ ] Mikroservislerin konuşacağı bir Client oluşturulup gizli anahtarı (Client Secret) .env dosyasına alınmalı ya da windows da setx ile tutulmalı.
+
+
+* [ ] Projenin gerçek iş kurallarına uygun olarak ADMIN, DEALER (Saha Bayisi) ve MUSTERI rolleri Keycloak arayüzünden Realm Roles olarak tanımlanmalı.
+
+
+
+---
+
+### KART 01: [IDENTITY] İkili Login Akışı & OTP Entegrasyonu (GÜNCELLENDİ)
+
+* **Açıklama:** Admin/Bayi personeli ile normal müşterilerin farklı yöntemlerle (Şifre vs. OTP) sisteme giriş yapabilmesi için kimlik doğrulama servisinin yazılması.
 
 
 * **Atanan Kişi:** Ahmet · Tech Lead
@@ -39,22 +67,21 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Öncelik:** Yüksek
 
 
-* **Bağımlılık:** Yok
+* **Bağımlılık:** KART 0.1
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `identity-service` (9001) üzerinde `POST /api/v1/auth/login` endpoint'i yazılmalı, başarılı girişte 15 dk süreli Access Token ve 7 gün süreli Refresh Token dönmeli.
+* [ ] Özel JWT üretme ve Redis blacklist kodları tamamen projeden kaldırılmalı.
 
 
-* [ ] `POST /api/v1/auth/refresh` isteği geldiğinde eski refresh token Redis'e blacklist olarak yazılmalı (TTL = Access Token süresi) ve yeni token çifti üretilmeli (Token Rotation).
+* [ ] Admin/Dealer Girişi: Kullanıcı adı ve şifre ile giriş yapan personeller için Keycloak'un Direct Access Grant (Doğrudan Erişim) akışına proxy görevi gören bir login endpoint'i yazılmalı.
 
 
-* [ ] Rol ve İzin (Role & Permission) veritabanı tabloları Flyway scripti ile oluşturulmalı ve Spring Security entegrasyonu tamamlanmalı.
+* [ ] Müşteri OTP Girişi (Adım 1): Müşteriler için `POST /api/v1/auth/otp/request` endpoint'i yazılmalı (Sisteme kayıtlı telefon numarasına OTP kodu üretip dönmeli/göndermeli).
 
 
+* [ ] Müşteri OTP Girişi (Adım 2): `POST /api/v1/auth/otp/verify` endpoint'i ile girilen kod doğrulanmalı. Doğrulama başarılı olursa, Identity Service arka planda Keycloak ile konuşarak (Client Credentials veya Token Exchange üzerinden) o müşteriye ait JWT token'ı üretip istemciye (frontend/mobil) dönmeli.
 
-
-* **Kullanılacak Teknolojiler:** Java 21, Spring Boot 3.3.x, jjwt 0.12.x, Redis 7, Flyway, PostgreSQL 16
 
 
 
@@ -73,10 +100,10 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `customer-service` (9002) üzerinde bireysel müşteri oluşturma (`POST /api/v1/customers`) ve güncelleme endpoint'leri yazılmalı.
+* [ ] `customer-service` üzerinde saha bayisi tarafından tetiklenecek POST /api/v1/customers (Başvuru Açma) endpoint'i yazılmalı.
 
 
-* [ ] Gelen TCKN bilgisi 11 hane ve resmi TCKN algoritmasına göre valide edilmeli.
+* [ ] Gelen müşteri verisi sadece PostgreSQL veritabanına kaydedilmeli (Müşteri henüz KYC onayından geçmediği için login olamaz, bu yüzden Keycloak'ta kullanıcı açılmamalıdır).
 
 
 * [ ] TCKN alanı veritabanına yazılmadan önce JPA AttributeConverter (`PiiConverter`) kullanılarak AES-GCM algoritması ile şifrelenmeli.
@@ -106,21 +133,27 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `POST /api/v1/customers/{id}/kyc/approve` mock admin endpoint'i yazılmalı, müşteri statüsü `PENDING` durumundan `ACTIVE` durumuna çekilmeli.
+* [ ] `POST /api/v1/customers/{id}/kyc/approve` admin endpoint'i yazılmalı, müşteri statüsü `PENDING` durumundan `ACTIVE` durumuna çekilmeli (orijinal davranış korunur).
 
 
-* [ ] Onaylama anında veritabanındaki `outbox_event` tablosuna `CustomerKYCApprovedEvent` kaydı (JSON payload ile) eklenmeli.
+* [ ] Statü `ACTIVE`'e çekilmeden hemen önce, `customer-service` içinde `keycloak-admin-client` kullanılarak Keycloak Admin API'ye istek atılmalı ve bu müşterinin telefon numarası `username` olacak şekilde Keycloak'ta yeni bir User oluşturulmalı (rol: `CUSTOMER`).
+
+* [ ] Keycloak'tan dönen benzersiz kullanıcı kimliği (`Keycloak User ID`), müşteri veritabanı `kaydına keycloakUserId` alanı olarak yazılmalı. Bu alan, ileride OTP doğrulandığında "bu telefon numarasına karşılık gelen Keycloak kullanıcısı kim" sorusunu cevaplamak için kullanılacak.
+
+* [ ] Keycloak User oluşturma işlemi başarısız olursa (örneğin Keycloak o an erişilemezse), `ACTIVE` statüsüne geçiş de yapılmamalı; işlem bir transaction gibi davranmalı (ya ikisi de başarılı, ya ikisi de geri alınır). Bunun için basit bir try-catch + rollback yeterli, dağıtık transaction (Saga) gerekmiyor çünkü ikisi de aynı serviste tetikleniyor
+
+* [ ] Onaylama anında veritabanındaki `outbox_event` tablosuna `CustomerKYCApprovedEvent` kaydı (JSON payload'a artık `keycloakUserId` de dahil edilerek) eklenmeli.
 
 
-* [ ] Uygulama kodunda kesinlikle Kafka Producer kodu yazılmamalı; `Debezium CDC` PostgreSQL connector'ü WAL (Write-Ahead Log) üzerinden bu kaydı okuyup `telcox.customer.customer.CustomerKYCApproved` topic'ine otomatik basmalı.
+* [ ] Uygulama kodunda kesinlikle Kafka Producer kodu yazılmamalı; `Debezium CDC` PostgreSQL connector'ü WAL üzerinden bu kaydı okuyup `telcox.customer.customer.CustomerKYCApproved` topic'ine otomatik basmalı (orijinal davranış korunur).
 
 
-* [ ] Klasik Gateway Yönetimi İzolasyonu: Docker Compose dosyasında `api-gateway` (8080) haricindeki tüm iç servis portları (9001, 9002 vb.) host makineye expose edilmemeli, servisler sadece iç ağda kalmalı.
+* [ ] Klasik Gateway Yönetimi İzolasyonu: Docker Compose dosyasında `api-gateway` (8080) haricindeki tüm iç servis portları host makineye expose edilmemeli (orijinal davranış korunur).
 
 
 
 
-* **Kullanılacak Teknolojiler:** Debezium PostgreSQL Connector, PostgreSQL WAL Logical Replication, Kafka Connect
+* **Kullanılacak Teknolojiler:** Debezium PostgreSQL Connector, PostgreSQL WAL Logical Replication, Kafka Connect, Keycloak Admin REST Client
 
 
 
@@ -400,7 +433,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 ### KART 13: [GATEWAY] Redis WebFilter Rate Limiting & Auth Relay
 
-* **Açıklama:** API Gateway katmanında gelen isteklerin güvenli şekilde sınırlandırılması ve çözülen kimlik bilgilerinin iç servislere güvenle taşınması.
+* **Açıklama:** API Gateway katmanının Keycloak'tan gelen token'ları doğrulayacak şekilde ayarlanması ve iç servislere kimlik paslaması.
 
 
 * **Atanan Kişi:** Ahmet · Tech Lead
@@ -413,14 +446,16 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `api-gateway` üzerinde Redis tabanlı "Sliding Window" algoritması kullanan bir WebFilter yazılmalı; kullanıcı başına dakikada maksimum 100 istek sınırı (HTTP 429) konulmalı.
+* [ ] `api-gateway` projesinin application.yml dosyasına Keycloak'un Issuer URI (Örn: `http://localhost:8080/realms/telco-crm-realm`) adresi eklenmeli.
 
 
-* [ ] Başarılı login olan kullanıcıların JWT token'ları Gateway'de çözülmeli; kullanıcının benzersiz ID bilgisi `X-User-Id` ve rolleri `X-User-Roles` header'ları eklenerek downstream (iç) servislere paslanmalı.
+* [ ] Gateway'e gelen her istekteki JWT token, Keycloak'un public key'i (JWKS) üzerinden Spring Security tarafından otomatik doğrulanmalı (Custom filtre yazmaya gerek kalmayacak).
 
 
-* [ ] Gateway dışındaki servislerin portlarının dış dünyaya tamamen kapalı olduğu (Docker internal network izolasyonu) teyit edilmeli.
+* [ ] Başarılı doğrulanan token'ın içerisinden (Payload/Claims) kullanıcının sub (Subject ID) bilgisi alınmalı ve iç servislere `X-User-Id` header'ı olarak paslanmalı (Auth Relay)
 
+
+* [ ] `Redis` tabanlı 100 req/dk Rate Limiting mekanizması orijinal plandaki gibi aynen korunmalı.
 
 
 

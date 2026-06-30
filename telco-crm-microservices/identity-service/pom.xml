@@ -99,24 +99,23 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- Spring Security & JWT for identity token generation -->
-        <dependency>
+        <!-- Spring Security (Keycloak entegrasyonu için hâlâ gerekli) -->
+        <dependency>        
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
+
+        <!-- Keycloak Admin REST Client (OTP sonrası token üretimi + KYC anında user oluşturma) -->
+        <dependency>        
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>24.0.4</version>
         </dependency>
+
+        <!-- OAuth2 Resource Server (Gateway'e değil ama identity-service'e gelen isteklerde token okumak gerekirse) -->
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <scope>runtime</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
         <!-- MapStruct for Mapping -->
