@@ -5,6 +5,9 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
     show-sql: true
   flyway:
     url: jdbc:postgresql://localhost:5437/subscription_db

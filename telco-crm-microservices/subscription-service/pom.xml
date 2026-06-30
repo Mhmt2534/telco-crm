@@ -99,6 +99,13 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!-- Redisson for Distributed Locks -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.42.0</version>
+        </dependency>
+
         <!-- MapStruct for Mapping -->
         <dependency>
             <groupId>org.mapstruct</groupId>
