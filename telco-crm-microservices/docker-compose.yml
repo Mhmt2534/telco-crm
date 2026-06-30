@@ -7,11 +7,37 @@ services:
   # Host (dev) port    : see table below
   # ════════════════════════════════════════════════════════════════════════
 
+  # ──── keycloak DB  (host: 5443) ────
+  keycloak-db:
+    image: postgres:17
+    container_name: keycloak-db
+    profiles: [ "dbs", "tools", "apps" ]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: keycloak_db
+    ports:
+      - "5443:5432" # Diğer DB port serisine uygun olarak 5443 seçilmiştir.
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d keycloak_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    networks:
+      - telco-net
+
   # ──── identity-service DB  (host: 5433) ────
   identity-db:
     image: postgres:17
     container_name: identity-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -21,7 +47,7 @@ services:
     volumes:
       - identity-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d identity_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d identity_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -37,7 +63,7 @@ services:
   customer-db:
     image: postgres:17
     container_name: customer-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -47,7 +73,7 @@ services:
     volumes:
       - customer-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d customer_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d customer_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -63,7 +89,7 @@ services:
   product-db:
     image: postgres:17
     container_name: product-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -73,7 +99,7 @@ services:
     volumes:
       - product-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d product_catalog_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d product_catalog_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -89,7 +115,7 @@ services:
   order-db:
     image: postgres:17
     container_name: order-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -99,7 +125,7 @@ services:
     volumes:
       - order-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d order_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d order_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -115,7 +141,7 @@ services:
   subscription-db:
     image: postgres:17
     container_name: subscription-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -125,7 +151,7 @@ services:
     volumes:
       - subscription-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d subscription_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d subscription_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -141,7 +167,7 @@ services:
   billing-db:
     image: postgres:17
     container_name: billing-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -151,7 +177,7 @@ services:
     volumes:
       - billing-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d billing_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d billing_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -167,7 +193,7 @@ services:
   usage-db:
     image: postgres:17
     container_name: usage-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -177,7 +203,7 @@ services:
     volumes:
       - usage-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d usage_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d usage_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -193,7 +219,7 @@ services:
   notification-db:
     image: postgres:17
     container_name: notification-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -203,7 +229,7 @@ services:
     volumes:
       - notification-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d notification_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d notification_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -219,7 +245,7 @@ services:
   ticket-db:
     image: postgres:17
     container_name: ticket-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -229,7 +255,7 @@ services:
     volumes:
       - ticket-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ticket_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d ticket_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -245,7 +271,7 @@ services:
   payment-db:
     image: postgres:17
     container_name: payment-db
-    profiles: ["dbs"]
+    profiles: [ "dbs" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -255,7 +281,7 @@ services:
     volumes:
       - payment-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d payment_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d payment_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -293,7 +319,7 @@ services:
       # Cap the broker heap so it comfortably fits the memory limit below.
       - KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list"]
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -316,7 +342,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -368,7 +394,7 @@ services:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     healthcheck:
       # Dashboard/actuator are secured (basic auth) — treat 200/401 as "up".
-      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8761/actuator/health | grep -qE '200|401'"]
+      test: [ "CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8761/actuator/health | grep -qE '200|401'" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -400,7 +426,7 @@ services:
     volumes:
       - ./config-repo:/config-repo:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8888/actuator/health | grep -qE '200|401'"]
+      test: [ "CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8888/actuator/health | grep -qE '200|401'" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -426,7 +452,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     container_name: telco-kafka-ui
-    profiles: ["tools"]
+    profiles: [ "tools" ]
     ports:
       - "8085:8080"
     environment:
@@ -447,7 +473,7 @@ services:
   mailpit:
     image: axllent/mailpit:v1.30.2
     container_name: telco-mailpit
-    profiles: ["tools"]
+    profiles: [ "tools" ]
     ports:
       - "8025:8025"
       - "1025:1025"
@@ -462,7 +488,7 @@ services:
   redisinsight:
     image: redis/redisinsight:3.6.0
     container_name: telco-redisinsight
-    profiles: ["tools"]
+    profiles: [ "tools" ]
     ports:
       - "5540:5540"
     depends_on:
@@ -490,7 +516,7 @@ services:
       args:
         SERVICE: identity-service
     container_name: identity-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://identity-db:5432/identity_db
@@ -515,7 +541,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9001/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9001/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -535,7 +561,7 @@ services:
       args:
         SERVICE: customer-service
     container_name: customer-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://customer-db:5432/customer_db
@@ -560,7 +586,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9002/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9002/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -580,7 +606,7 @@ services:
       args:
         SERVICE: product-catalog-service
     container_name: product-catalog-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/product_catalog_db
@@ -605,7 +631,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9003/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9003/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -625,7 +651,7 @@ services:
       args:
         SERVICE: order-service
     container_name: order-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
@@ -650,7 +676,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9004/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9004/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -670,7 +696,7 @@ services:
       args:
         SERVICE: subscription-service
     container_name: subscription-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://subscription-db:5432/subscription_db
@@ -695,7 +721,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9005/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9005/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -715,7 +741,7 @@ services:
       args:
         SERVICE: billing-service
     container_name: billing-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://billing-db:5432/billing_db
@@ -740,7 +766,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9007/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9007/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -760,7 +786,7 @@ services:
       args:
         SERVICE: usage-service
     container_name: usage-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://usage-db:5432/usage_db
@@ -785,7 +811,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9006/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9006/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -805,7 +831,7 @@ services:
       args:
         SERVICE: notification-service
     container_name: notification-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_db
@@ -830,7 +856,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9009/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9009/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -850,7 +876,7 @@ services:
       args:
         SERVICE: ticket-service
     container_name: ticket-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-db:5432/ticket_db
@@ -875,7 +901,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9010/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9010/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -895,7 +921,7 @@ services:
       args:
         SERVICE: payment-service
     container_name: payment-service
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
@@ -920,7 +946,7 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9008/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9008/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -938,6 +964,39 @@ services:
   # Starts last, after all downstream microservices are healthy.
   # ════════════════════════════════════════════════════════════════════════
 
+  # ──── keycloak (8081) ────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: keycloak
+    profiles: [ "tools", "apps" ]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak_db
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # Geliştirme ortamında (http) çalışabilmesi için proxy modunu açıyoruz.
+      KC_PROXY: edge
+    command: start-dev # Lokal geliştirme modu
+    ports:
+      - "9011:8080" # api-gateway(8080) ile çakışmaması için 9011'e bind edilmiştir.
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo 'Keycloak is up' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    networks:
+      - telco-net
+
   # ──── api-gateway (8080) ────
   api-gateway:
     build:
@@ -945,7 +1004,7 @@ services:
       args:
         SERVICE: api-gateway
     container_name: api-gateway
-    profiles: ["apps"]
+    profiles: [ "apps" ]
     ports:
       - "8080:8080"
     environment:
@@ -964,7 +1023,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -988,6 +1047,7 @@ networks:
 # Named volumes — one dedicated volume per database container
 # ════════════════════════════════════════════════════════════════════════
 volumes:
+  keycloak-db-data:
   identity-db-data:
   customer-db-data:
   product-db-data:
