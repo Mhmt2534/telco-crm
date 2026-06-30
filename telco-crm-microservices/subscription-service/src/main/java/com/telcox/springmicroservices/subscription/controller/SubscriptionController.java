@@ -48,6 +48,12 @@ public class SubscriptionController {
         return ResponseEntity.ok(subscriptionService.getSubscription(id));
     }
 
+    @GetMapping
+    @Operation(summary = "Tüm abonelikleri getir", description = "Veritabanındaki tüm abonelik kayıtlarını listeler.")
+    public ResponseEntity<java.util.List<SubscriptionResponse>> getAllSubscriptions() {
+        return ResponseEntity.ok(subscriptionService.getAllSubscriptions());
+    }
+
     @PostMapping("/{id}/suspend")
     @Operation(summary = "Aboneliği askıya al",
                description = "Ödeme yapılmadığında abonelik SUSPENDED statüsüne alınır.")

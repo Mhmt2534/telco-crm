@@ -71,6 +71,16 @@ public class SubscriptionService {
     }
 
     /**
+     * Tüm abonelikleri getirir.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<SubscriptionResponse> getAllSubscriptions() {
+        return subscriptionRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
      * Aboneliği askıya alır (ödeme yapılmadığında).
      */
     @Transactional
