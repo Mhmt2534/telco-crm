@@ -361,6 +361,8 @@ services:
       args:
         SERVICE: discovery-server
     container_name: discovery-server
+    ports:
+      - "8761:8761"
     environment:
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
@@ -386,6 +388,8 @@ services:
       args:
         SERVICE: config-server
     container_name: config-server
+    ports:
+      - "8888:8888"
     environment:
       # Read the git-backed config-repo from the bind-mounted path inside the container.
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS: file:/config-repo
