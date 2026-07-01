@@ -33,7 +33,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 * **Açıklama:** Mevcut Docker Compose altyapısına Keycloak sunucusunun eklenmesi ve projeye özel rollerin ayarlanması.
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -61,7 +61,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Admin/Bayi personeli ile normal müşterilerin farklı yöntemlerle (Şifre vs. OTP) sisteme giriş yapabilmesi için kimlik doğrulama servisinin yazılması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -87,10 +87,10 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 ### KART 02: [CUSTOMER] Müşteri CRUD & TCKN AES-GCM Şifreleme
 
-* **Açıklama:** KVKK mevzuatına uygun şekilde müşteri bilgilerinin kaydedilmesi, güncellenmesi ve hassas verilerin şifrelenmesi.
+* **Açıklama:** Saha bayisinin (DEALER) müşteri adına başvuru açması ve verilerin güvenli şekilde veritabanına kaydedilmesi. Bu aşamada Keycloak'a kesinlikle dokunulmaz.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -118,12 +118,12 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 
-### KART 03: [CUSTOMER] KYC Mock Onay Akışı & Debezium Outbox Yapılandırması
+### KART 03: [CUSTOMER] KYC Onayı & Keycloak Kullanıcı Senkronizasyonu (YENİ)
 
-* **Açıklama:** Müşteri döküman onay sürecinin işletilmesi ve veri tabanında oluşan değişikliklerin ağ yükü yaratmadan dış dünyaya duyurulması.
+* **Açıklama:** Saha bayisi tarafından açılan müşteri başvurusunun admin onayından geçmesi, onay anında müşterinin Keycloak'ta bir kimlik kazanması (böylece OTP ile giriş yapabilir hale gelmesi) ve bu değişikliğin Debezium ile dış dünyaya duyurulması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -162,7 +162,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Satışa sunulacak tarife ve ek paketlerin admin panelinden yönetilmesi ve mevcut abonelerin fiyat değişimlerinden etkilenmemesi için değişmezlik mimarisinin kurulması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -195,7 +195,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sıkça sorgulanan tarife listelerinin veritabanına yük bindirmemesi için Redis önbellek mekanizmasının kurulması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -225,7 +225,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sipariş süreçlerinin durum yönetimini üstlenecek veri katmanının ve dağıtık transaction durum tablosunun kurulması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -255,7 +255,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Dağıtık mimaride aynı telefon numarasının aynı anda iki farklı kişiye satılmasını engelleyecek güvenli numara tahsis yapısının kodlanması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -285,7 +285,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Abone kullanımlarının (Dakika, SMS, GB) düşüleceği kota sayaç tablosunun ve geçmiş kullanım kayıt veri tabanının kurulması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -315,7 +315,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Simülatörden fırlatılacak ham çağrı kayıtlarının veri kaybı yaşanmadan ve abona bazlı kronolojik sırayla dinleneceği tüketici katmanının yazılması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -345,7 +345,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kullanıcılara gönderilecek SMS ve E-posta şablonlarının yönetilmesi ve test ortamında sahte sunucuya yönlendirilmesi.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -375,7 +375,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sistemi canlıya almadan önce gerçekçi şebeke yükü üretecek, yüksek hızlı bir çağrı simülatör aracının yazılması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Yüksek
@@ -405,7 +405,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Hafta 1 sonunda üretilen servislerin (Customer, Order) entegre şekilde ilk temel akışı çalıştırabildiğinin test otomasyonu ile kanıtlanması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -436,7 +436,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** API Gateway katmanının Keycloak'tan gelen token'ları doğrulayacak şekilde ayarlanması ve iç servislere kimlik paslaması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -468,7 +468,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Mikroservis mimarisinde bir isteğin hangi servislerden geçip nerede hata aldığını tek bir izleme ekranından görebilme altyapısı.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Düşük
@@ -498,7 +498,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sipariş tamamlama sürecindeki Ödeme ve Abonelik işlemlerini tek bir merkezden yönetecek orkestratör bileşeninin mutlu yol senaryosunun kodlanması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Yüksek
@@ -528,7 +528,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Dağıtık transaction adımlarında herhangi bir iç serviste (Örn: Abonelik) hata çıktığında, yapılan finansal işlemleri otomatik tersine çevirecek telafi kodunun yazılması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Yüksek
@@ -558,7 +558,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sipariş servisinde, dışarıya atılan senkron HTTP/FeignClient çağrılarında (Müşteri doğrulama vb.) karşı servis çöktüğünde sistemin kilitlenmesini önleme.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -588,7 +588,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Ay sonu fatura kesim zamanı geldiğinde arka planda çalışan toplu fatura işinin podlar arasında çakışmadan güvenle çalıştırılması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -618,7 +618,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Ağ kesintisi veya kullanıcının butona çift basması durumunda karttan iki kez para çekilmesinin kesin olarak engellenmesi ve hata alan faturaların otomatik takibi.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -648,7 +648,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kesilen faturanın resmi PDF belgesinin üretilmesi ve güvenli şekilde bulut nesne depolama alanında saklanması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -678,7 +678,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Müşterilerin çağrı merkezine ilettiği arıza ve şikayetlerin durum takibi ve çözüm sürelerinin yasal sınır kontrolü.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Düşük
@@ -708,7 +708,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Fatura kesim döngüsünün ve kota aşım uyarı mekanizmalarının entegre şekilde çalıştığının test kodları ile kanıtlanması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -739,7 +739,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Geliştirilen tüm servislerin lokal bilgisayardaki Docker ortamından çıkarılarak Kubernetes kümesine taşınması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Düşük
@@ -766,7 +766,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sistemin anlık gelen yoğun yüklere karşı otomatik pod sayısını artırmasını sağlayacak kuralların girilmesi.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Düşük
@@ -793,7 +793,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kullanıcıların mevcut taahhütleri devam ederken ek internet paketi alabilmesi veya tarife yükseltme süreçlerinin iş kurallarının yazılması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Düşük
@@ -823,7 +823,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** İki servis arasındaki event şemalarından biri değiştiğinde sistemin derleme anında patlayarak hatayı önceden yakalamasını sağlayan koruma testleri.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Düşük
@@ -850,7 +850,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kotasını bitiren abonenin simülatörden gelen ekstra kullanımlarının (aşım miktarı) hesaplanarak faturaya ek satır harcaması olarak eklenmesi.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -877,7 +877,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Müşterilerin sistemde bakiye tutabilmesi ve fatura ödeme anında kredi kartından önce bu bakiyenin harcanması altyapısı.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -904,7 +904,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sistemin canlıya çıkmadan önce toplu fatura kesim esnasındaki performans limitlerinin ve hızının ölçülmesi.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -931,7 +931,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Geliştiricilerin ve test ekiplerinin tüm servislerin API dökümanlarına tek bir web arayüzünden erişebilmesinin sağlanması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Mahmut · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -958,7 +958,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** MVP teslimatı öncesinde iş birimlerine sunulacak olan 3 ana senaryonun hatasız çalıştığının kanıtlanması ve kapanış regresyon testi.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Yüksek
