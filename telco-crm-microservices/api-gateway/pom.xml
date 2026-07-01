@@ -66,20 +66,10 @@
             <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
         </dependency>
 
-        <!-- JJWT for JWT Token validation at Gateway boundary -->
+        <!-- OAuth2 Resource Server - Keycloak JWKS ile token doğrulama (reactive/webflux uyumlu) -->
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <scope>runtime</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
         <!-- OpenAPI UI support tailored for WebFlux -->

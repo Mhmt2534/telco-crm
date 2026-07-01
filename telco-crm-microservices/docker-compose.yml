@@ -11,7 +11,6 @@ services:
   keycloak-db:
     image: postgres:17
     container_name: keycloak-db
-    profiles: [ "dbs", "tools", "apps" ]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -968,7 +967,6 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.5
     container_name: keycloak
-    profiles: [ "tools", "apps" ]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak_db
@@ -978,9 +976,11 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       # Geliştirme ortamında (http) çalışabilmesi için proxy modunu açıyoruz.
       KC_PROXY: edge
-    command: start-dev # Lokal geliştirme modu
+    command: start-dev --import-realm # Lokal geliştirme modu
     ports:
       - "9011:8080" # api-gateway(8080) ile çakışmaması için 9011'e bind edilmiştir.
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
     depends_on:
       keycloak-db:
         condition: service_healthy

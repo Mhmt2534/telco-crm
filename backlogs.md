@@ -28,42 +28,69 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 ## 📌 LİSTE: SPRINT 1 — HAFTA 1: Temel Servisler & Veri Katmanı
 
-### KART 01: [IDENTITY] JWT Auth & Redis Blacklist Mekanizması
+---
+### KART 0.1: [INFRASTRUCTURE] Keycloak Ortak Altyapı Kurulumu (GÜNCELLENDİ)
 
-* **Açıklama:** Kullanıcıların sisteme güvenli giriş yapabilmesi ve çıkış yaptıklarında token'larının geçersiz kılınması için kimlik doğrulama sisteminin kurulması.
+* **Açıklama:** Mevcut Docker Compose altyapısına Keycloak sunucusunun eklenmesi ve projeye özel rollerin ayarlanması.
 
-
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
 
 
-* **Bağımlılık:** Yok
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] Merkezi docker-compose.yml dosyasına Keycloak imajı eklenmeli ve PostgreSQL veritabanına bağlanacak şekilde yapılandırılmalı.
+
+
+* [ ] Keycloak admin paneline girilerek proje için yeni bir Realm (Örn: telco-crm-realm) oluşturulmalı.
+
+
+* [ ] Mikroservislerin konuşacağı bir Client oluşturulup gizli anahtarı (Client Secret) .env dosyasına alınmalı ya da windows da setx ile tutulmalı.
+
+
+* [ ] Projenin gerçek iş kurallarına uygun olarak ADMIN, DEALER (Saha Bayisi) ve MUSTERI rolleri Keycloak arayüzünden Realm Roles olarak tanımlanmalı.
+
+
+
+---
+
+### KART 01: [IDENTITY] İkili Login Akışı & OTP Entegrasyonu (GÜNCELLENDİ)
+
+* **Açıklama:** Admin/Bayi personeli ile normal müşterilerin farklı yöntemlerle (Şifre vs. OTP) sisteme giriş yapabilmesi için kimlik doğrulama servisinin yazılması.
+
+
+* **Atanan Kişi:** Mahmut · Tech Lead
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 0.1
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `identity-service` (9001) üzerinde `POST /api/v1/auth/login` endpoint'i yazılmalı, başarılı girişte 15 dk süreli Access Token ve 7 gün süreli Refresh Token dönmeli.
+* [ ] Özel JWT üretme ve Redis blacklist kodları tamamen projeden kaldırılmalı.
 
 
-* [ ] `POST /api/v1/auth/refresh` isteği geldiğinde eski refresh token Redis'e blacklist olarak yazılmalı (TTL = Access Token süresi) ve yeni token çifti üretilmeli (Token Rotation).
+* [ ] Admin/Dealer Girişi: Kullanıcı adı ve şifre ile giriş yapan personeller için Keycloak'un Direct Access Grant (Doğrudan Erişim) akışına proxy görevi gören bir login endpoint'i yazılmalı.
 
 
-* [ ] Rol ve İzin (Role & Permission) veritabanı tabloları Flyway scripti ile oluşturulmalı ve Spring Security entegrasyonu tamamlanmalı.
+* [ ] Müşteri OTP Girişi (Adım 1): Müşteriler için `POST /api/v1/auth/otp/request` endpoint'i yazılmalı (Sisteme kayıtlı telefon numarasına OTP kodu üretip dönmeli/göndermeli).
 
 
+* [ ] Müşteri OTP Girişi (Adım 2): `POST /api/v1/auth/otp/verify` endpoint'i ile girilen kod doğrulanmalı. Doğrulama başarılı olursa, Identity Service arka planda Keycloak ile konuşarak (Client Credentials veya Token Exchange üzerinden) o müşteriye ait JWT token'ı üretip istemciye (frontend/mobil) dönmeli.
 
-
-* **Kullanılacak Teknolojiler:** Java 21, Spring Boot 3.3.x, jjwt 0.12.x, Redis 7, Flyway, PostgreSQL 16
 
 
 
 ### KART 02: [CUSTOMER] Müşteri CRUD & TCKN AES-GCM Şifreleme
 
-* **Açıklama:** KVKK mevzuatına uygun şekilde müşteri bilgilerinin kaydedilmesi, güncellenmesi ve hassas verilerin şifrelenmesi.
+* **Açıklama:** Saha bayisinin (DEALER) müşteri adına başvuru açması ve verilerin güvenli şekilde veritabanına kaydedilmesi. Bu aşamada Keycloak'a kesinlikle dokunulmaz.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -73,10 +100,10 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `customer-service` (9002) üzerinde bireysel müşteri oluşturma (`POST /api/v1/customers`) ve güncelleme endpoint'leri yazılmalı.
+* [ ] `customer-service` üzerinde saha bayisi tarafından tetiklenecek POST /api/v1/customers (Başvuru Açma) endpoint'i yazılmalı.
 
 
-* [ ] Gelen TCKN bilgisi 11 hane ve resmi TCKN algoritmasına göre valide edilmeli.
+* [ ] Gelen müşteri verisi sadece PostgreSQL veritabanına kaydedilmeli (Müşteri henüz KYC onayından geçmediği için login olamaz, bu yüzden Keycloak'ta kullanıcı açılmamalıdır).
 
 
 * [ ] TCKN alanı veritabanına yazılmadan önce JPA AttributeConverter (`PiiConverter`) kullanılarak AES-GCM algoritması ile şifrelenmeli.
@@ -91,12 +118,12 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 
-### KART 03: [CUSTOMER] KYC Mock Onay Akışı & Debezium Outbox Yapılandırması
+### KART 03: [CUSTOMER] KYC Onayı & Keycloak Kullanıcı Senkronizasyonu (YENİ)
 
-* **Açıklama:** Müşteri döküman onay sürecinin işletilmesi ve veri tabanında oluşan değişikliklerin ağ yükü yaratmadan dış dünyaya duyurulması.
+* **Açıklama:** Saha bayisi tarafından açılan müşteri başvurusunun admin onayından geçmesi, onay anında müşterinin Keycloak'ta bir kimlik kazanması (böylece OTP ile giriş yapabilir hale gelmesi) ve bu değişikliğin Debezium ile dış dünyaya duyurulması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -106,21 +133,27 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `POST /api/v1/customers/{id}/kyc/approve` mock admin endpoint'i yazılmalı, müşteri statüsü `PENDING` durumundan `ACTIVE` durumuna çekilmeli.
+* [ ] `POST /api/v1/customers/{id}/kyc/approve` admin endpoint'i yazılmalı, müşteri statüsü `PENDING` durumundan `ACTIVE` durumuna çekilmeli (orijinal davranış korunur).
 
 
-* [ ] Onaylama anında veritabanındaki `outbox_event` tablosuna `CustomerKYCApprovedEvent` kaydı (JSON payload ile) eklenmeli.
+* [ ] Statü `ACTIVE`'e çekilmeden hemen önce, `customer-service` içinde `keycloak-admin-client` kullanılarak Keycloak Admin API'ye istek atılmalı ve bu müşterinin telefon numarası `username` olacak şekilde Keycloak'ta yeni bir User oluşturulmalı (rol: `CUSTOMER`).
+
+* [ ] Keycloak'tan dönen benzersiz kullanıcı kimliği (`Keycloak User ID`), müşteri veritabanı `kaydına keycloakUserId` alanı olarak yazılmalı. Bu alan, ileride OTP doğrulandığında "bu telefon numarasına karşılık gelen Keycloak kullanıcısı kim" sorusunu cevaplamak için kullanılacak.
+
+* [ ] Keycloak User oluşturma işlemi başarısız olursa (örneğin Keycloak o an erişilemezse), `ACTIVE` statüsüne geçiş de yapılmamalı; işlem bir transaction gibi davranmalı (ya ikisi de başarılı, ya ikisi de geri alınır). Bunun için basit bir try-catch + rollback yeterli, dağıtık transaction (Saga) gerekmiyor çünkü ikisi de aynı serviste tetikleniyor
+
+* [ ] Onaylama anında veritabanındaki `outbox_event` tablosuna `CustomerKYCApprovedEvent` kaydı (JSON payload'a artık `keycloakUserId` de dahil edilerek) eklenmeli.
 
 
-* [ ] Uygulama kodunda kesinlikle Kafka Producer kodu yazılmamalı; `Debezium CDC` PostgreSQL connector'ü WAL (Write-Ahead Log) üzerinden bu kaydı okuyup `telcox.customer.customer.CustomerKYCApproved` topic'ine otomatik basmalı.
+* [ ] Uygulama kodunda kesinlikle Kafka Producer kodu yazılmamalı; `Debezium CDC` PostgreSQL connector'ü WAL üzerinden bu kaydı okuyup `telcox.customer.customer.CustomerKYCApproved` topic'ine otomatik basmalı (orijinal davranış korunur).
 
 
-* [ ] Klasik Gateway Yönetimi İzolasyonu: Docker Compose dosyasında `api-gateway` (8080) haricindeki tüm iç servis portları (9001, 9002 vb.) host makineye expose edilmemeli, servisler sadece iç ağda kalmalı.
+* [ ] Klasik Gateway Yönetimi İzolasyonu: Docker Compose dosyasında `api-gateway` (8080) haricindeki tüm iç servis portları host makineye expose edilmemeli (orijinal davranış korunur).
 
 
 
 
-* **Kullanılacak Teknolojiler:** Debezium PostgreSQL Connector, PostgreSQL WAL Logical Replication, Kafka Connect
+* **Kullanılacak Teknolojiler:** Debezium PostgreSQL Connector, PostgreSQL WAL Logical Replication, Kafka Connect, Keycloak Admin REST Client
 
 
 
@@ -129,7 +162,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Satışa sunulacak tarife ve ek paketlerin admin panelinden yönetilmesi ve mevcut abonelerin fiyat değişimlerinden etkilenmemesi için değişmezlik mimarisinin kurulması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -162,7 +195,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sıkça sorgulanan tarife listelerinin veritabanına yük bindirmemesi için Redis önbellek mekanizmasının kurulması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -192,7 +225,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sipariş süreçlerinin durum yönetimini üstlenecek veri katmanının ve dağıtık transaction durum tablosunun kurulması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -222,7 +255,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Dağıtık mimaride aynı telefon numarasının aynı anda iki farklı kişiye satılmasını engelleyecek güvenli numara tahsis yapısının kodlanması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -252,7 +285,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Abone kullanımlarının (Dakika, SMS, GB) düşüleceği kota sayaç tablosunun ve geçmiş kullanım kayıt veri tabanının kurulması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -282,7 +315,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Simülatörden fırlatılacak ham çağrı kayıtlarının veri kaybı yaşanmadan ve abona bazlı kronolojik sırayla dinleneceği tüketici katmanının yazılması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -312,7 +345,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kullanıcılara gönderilecek SMS ve E-posta şablonlarının yönetilmesi ve test ortamında sahte sunucuya yönlendirilmesi.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -342,7 +375,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sistemi canlıya almadan önce gerçekçi şebeke yükü üretecek, yüksek hızlı bir çağrı simülatör aracının yazılması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Yüksek
@@ -372,7 +405,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Hafta 1 sonunda üretilen servislerin (Customer, Order) entegre şekilde ilk temel akışı çalıştırabildiğinin test otomasyonu ile kanıtlanması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -400,10 +433,10 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 ### KART 13: [GATEWAY] Redis WebFilter Rate Limiting & Auth Relay
 
-* **Açıklama:** API Gateway katmanında gelen isteklerin güvenli şekilde sınırlandırılması ve çözülen kimlik bilgilerinin iç servislere güvenle taşınması.
+* **Açıklama:** API Gateway katmanının Keycloak'tan gelen token'ları doğrulayacak şekilde ayarlanması ve iç servislere kimlik paslaması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -413,14 +446,16 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `api-gateway` üzerinde Redis tabanlı "Sliding Window" algoritması kullanan bir WebFilter yazılmalı; kullanıcı başına dakikada maksimum 100 istek sınırı (HTTP 429) konulmalı.
+* [ ] `api-gateway` projesinin application.yml dosyasına Keycloak'un Issuer URI (Örn: `http://localhost:8080/realms/telco-crm-realm`) adresi eklenmeli.
 
 
-* [ ] Başarılı login olan kullanıcıların JWT token'ları Gateway'de çözülmeli; kullanıcının benzersiz ID bilgisi `X-User-Id` ve rolleri `X-User-Roles` header'ları eklenerek downstream (iç) servislere paslanmalı.
+* [ ] Gateway'e gelen her istekteki JWT token, Keycloak'un public key'i (JWKS) üzerinden Spring Security tarafından otomatik doğrulanmalı (Custom filtre yazmaya gerek kalmayacak).
 
 
-* [ ] Gateway dışındaki servislerin portlarının dış dünyaya tamamen kapalı olduğu (Docker internal network izolasyonu) teyit edilmeli.
+* [ ] Başarılı doğrulanan token'ın içerisinden (Payload/Claims) kullanıcının sub (Subject ID) bilgisi alınmalı ve iç servislere `X-User-Id` header'ı olarak paslanmalı (Auth Relay)
 
+
+* [ ] `Redis` tabanlı 100 req/dk Rate Limiting mekanizması orijinal plandaki gibi aynen korunmalı.
 
 
 
@@ -433,7 +468,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Mikroservis mimarisinde bir isteğin hangi servislerden geçip nerede hata aldığını tek bir izleme ekranından görebilme altyapısı.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Düşük
@@ -463,7 +498,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sipariş tamamlama sürecindeki Ödeme ve Abonelik işlemlerini tek bir merkezden yönetecek orkestratör bileşeninin mutlu yol senaryosunun kodlanması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Yüksek
@@ -493,7 +528,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Dağıtık transaction adımlarında herhangi bir iç serviste (Örn: Abonelik) hata çıktığında, yapılan finansal işlemleri otomatik tersine çevirecek telafi kodunun yazılması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Yüksek
@@ -523,7 +558,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sipariş servisinde, dışarıya atılan senkron HTTP/FeignClient çağrılarında (Müşteri doğrulama vb.) karşı servis çöktüğünde sistemin kilitlenmesini önleme.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Orta
@@ -553,7 +588,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Ay sonu fatura kesim zamanı geldiğinde arka planda çalışan toplu fatura işinin podlar arasında çakışmadan güvenle çalıştırılması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -583,7 +618,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Ağ kesintisi veya kullanıcının butona çift basması durumunda karttan iki kez para çekilmesinin kesin olarak engellenmesi ve hata alan faturaların otomatik takibi.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -613,7 +648,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kesilen faturanın resmi PDF belgesinin üretilmesi ve güvenli şekilde bulut nesne depolama alanında saklanması.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Yüksek
@@ -643,7 +678,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Müşterilerin çağrı merkezine ilettiği arıza ve şikayetlerin durum takibi ve çözüm sürelerinin yasal sınır kontrolü.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Düşük
@@ -673,7 +708,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Fatura kesim döngüsünün ve kota aşım uyarı mekanizmalarının entegre şekilde çalıştığının test kodları ile kanıtlanması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -704,7 +739,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Geliştirilen tüm servislerin lokal bilgisayardaki Docker ortamından çıkarılarak Kubernetes kümesine taşınması.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Düşük
@@ -731,7 +766,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sistemin anlık gelen yoğun yüklere karşı otomatik pod sayısını artırmasını sağlayacak kuralların girilmesi.
 
 
-* **Atanan Kişi:** Ahmet · Tech Lead
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Düşük
@@ -758,7 +793,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kullanıcıların mevcut taahhütleri devam ederken ek internet paketi alabilmesi veya tarife yükseltme süreçlerinin iş kurallarının yazılması.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Düşük
@@ -788,7 +823,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** İki servis arasındaki event şemalarından biri değiştiğinde sistemin derleme anında patlayarak hatayı önceden yakalamasını sağlayan koruma testleri.
 
 
-* **Atanan Kişi:** Burak · Core Flow
+* **Atanan Kişi:** Mahmut · Core Flow
 
 
 * **Öncelik:** Düşük
@@ -815,7 +850,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Kotasını bitiren abonenin simülatörden gelen ekstra kullanımlarının (aşım miktarı) hesaplanarak faturaya ek satır harcaması olarak eklenmesi.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -842,7 +877,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Müşterilerin sistemde bakiye tutabilmesi ve fatura ödeme anında kredi kartından önce bu bakiyenin harcanması altyapısı.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -869,7 +904,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Sistemin canlıya çıkmadan önce toplu fatura kesim esnasındaki performans limitlerinin ve hızının ölçülmesi.
 
 
-* **Atanan Kişi:** Ceren · Finans
+* **Atanan Kişi:** Osman · Finans
 
 
 * **Öncelik:** Orta
@@ -896,7 +931,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Geliştiricilerin ve test ekiplerinin tüm servislerin API dökümanlarına tek bir web arayüzünden erişebilmesinin sağlanması.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Mahmut · İletişim & QA
 
 
 * **Öncelik:** Orta
@@ -923,7 +958,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** MVP teslimatı öncesinde iş birimlerine sunulacak olan 3 ana senaryonun hatasız çalıştığının kanıtlanması ve kapanış regresyon testi.
 
 
-* **Atanan Kişi:** Deniz · İletişim & QA
+* **Atanan Kişi:** Osman · İletişim & QA
 
 
 * **Öncelik:** Yüksek
