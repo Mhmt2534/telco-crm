@@ -11,6 +11,15 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
+/**
+ * Kafka'dan gelen ham CDR (Call Detail Record) kayıtlarının logu.
+ *
+ * cdr_ref: Kafka mesajındaki benzersiz referans numarasıdır.
+ * Aynı CDR'nin tekrar işlenmesini (idempotency) önler.
+ *
+ * msisdn: Kafka partition key olarak kullanılır; sorgu kolaylığı
+ * açısından burada da saklanır.
+ */
 @Entity
 @Table(name = "usage_records")
 public class UsageRecord extends BaseEntity {
@@ -18,66 +27,58 @@ public class UsageRecord extends BaseEntity {
     @Column(name = "subscription_id", nullable = false)
     private UUID subscriptionId;
 
+    /** Kafka partition key — sorgu kolaylığı için tutulur. */
     @Column(nullable = false, length = 20)
     private String msisdn;
-
-    @Column(nullable = false)
-    private Double amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UsageType type;
+
+    /** Tüketilen miktar (dakika / adet / MB). */
+    @Column(nullable = false)
+    private Double quantity;
+
+    /** Kafka CDR referansı — idempotency için UNIQUE. */
+    @Column(name = "cdr_ref", length = 100, unique = true)
+    private String cdrRef;
 
     @Column(name = "recorded_at", nullable = false)
     private OffsetDateTime recordedAt;
 
     public UsageRecord() {}
 
-    public UsageRecord(UUID subscriptionId, String msisdn, Double amount, UsageType type, OffsetDateTime recordedAt) {
+    public UsageRecord(UUID subscriptionId,
+                       String msisdn,
+                       UsageType type,
+                       Double quantity,
+                       String cdrRef,
+                       OffsetDateTime recordedAt) {
         this.subscriptionId = subscriptionId;
-        this.msisdn = msisdn;
-        this.amount = amount;
-        this.type = type;
-        this.recordedAt = recordedAt;
+        this.msisdn         = msisdn;
+        this.type           = type;
+        this.quantity       = quantity;
+        this.cdrRef         = cdrRef;
+        this.recordedAt     = recordedAt;
     }
 
-    public UUID getSubscriptionId() {
-        return subscriptionId;
-    }
+    // ── Getters / Setters ─────────────────────────────────────
 
-    public void setSubscriptionId(UUID subscriptionId) {
-        this.subscriptionId = subscriptionId;
-    }
+    public UUID getSubscriptionId()                        { return subscriptionId; }
+    public void setSubscriptionId(UUID subscriptionId)     { this.subscriptionId = subscriptionId; }
 
-    public String getMsisdn() {
-        return msisdn;
-    }
+    public String getMsisdn()                              { return msisdn; }
+    public void setMsisdn(String msisdn)                   { this.msisdn = msisdn; }
 
-    public void setMsisdn(String msisdn) {
-        this.msisdn = msisdn;
-    }
+    public UsageType getType()                             { return type; }
+    public void setType(UsageType type)                    { this.type = type; }
 
-    public Double getAmount() {
-        return amount;
-    }
+    public Double getQuantity()                            { return quantity; }
+    public void setQuantity(Double quantity)               { this.quantity = quantity; }
 
-    public void setAmount(Double amount) {
-        this.amount = amount;
-    }
+    public String getCdrRef()                              { return cdrRef; }
+    public void setCdrRef(String cdrRef)                   { this.cdrRef = cdrRef; }
 
-    public UsageType getType() {
-        return type;
-    }
-
-    public void setType(UsageType type) {
-        this.type = type;
-    }
-
-    public OffsetDateTime getRecordedAt() {
-        return recordedAt;
-    }
-
-    public void setRecordedAt(OffsetDateTime recordedAt) {
-        this.recordedAt = recordedAt;
-    }
+    public OffsetDateTime getRecordedAt()                  { return recordedAt; }
+    public void setRecordedAt(OffsetDateTime recordedAt)   { this.recordedAt = recordedAt; }
 }
