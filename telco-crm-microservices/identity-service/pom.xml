@@ -105,11 +105,12 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Keycloak Admin REST Client (OTP sonrası token üretimi + KYC anında user oluşturma) -->
-        <dependency>        
+        <!-- Keycloak Admin REST Client — versiyonu Keycloak sunucu sürümüyle (24.0.5) eşleştirildi.
+             Parent pom'daki keycloak.version (26.2.5) Maven Central'da mevcut değil. -->
+        <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-admin-client</artifactId>
-            <version>24.0.4</version>
+            <version>24.0.5</version>
         </dependency>
 
         <!-- OAuth2 Resource Server (Gateway'e değil ama identity-service'e gelen isteklerde token okumak gerekirse) -->
