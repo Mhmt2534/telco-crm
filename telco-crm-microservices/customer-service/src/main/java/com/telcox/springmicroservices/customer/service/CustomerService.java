@@ -36,7 +36,13 @@ public class CustomerService {
         String internalPassword = java.util.UUID.randomUUID().toString();
         
         // Create user in Keycloak
-        String keycloakUserId = keycloakUserService.createCustomerUser(customer.getPhone(), internalPassword);
+        String keycloakUserId = keycloakUserService.createCustomerUser(
+            customer.getPhone(), 
+            internalPassword,
+            customer.getFirstName(),
+            customer.getLastName(),
+            customer.getEmail()
+        );
 
         // Update Customer Entity
         customer.setStatus(com.telcox.springmicroservices.customer.domain.enums.CustomerStatus.ACTIVE);

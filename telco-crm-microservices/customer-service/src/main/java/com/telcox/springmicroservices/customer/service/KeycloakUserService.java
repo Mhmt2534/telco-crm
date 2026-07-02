@@ -33,9 +33,12 @@ public class KeycloakUserService {
      *
      * @param phone    The customer's phone number (used as username)
      * @param password The randomly generated internal password
+     * @param firstName The customer's first name
+     * @param lastName The customer's last name
+     * @param email The customer's email address
      * @return The ID of the newly created Keycloak user
      */
-    public String createCustomerUser(String phone, String password) {
+    public String createCustomerUser(String phone, String password, String firstName, String lastName, String email) {
         log.info("Keycloak üzerinde müşteri kullanıcısı oluşturuluyor. Username: {}", phone);
         
         RealmResource realmResource = keycloak.realm(keycloakProperties.getRealm());
@@ -43,6 +46,10 @@ public class KeycloakUserService {
 
         UserRepresentation user = new UserRepresentation();
         user.setUsername(phone);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setEmailVerified(true);
         user.setEnabled(true);
 
         Response response = usersResource.create(user);
