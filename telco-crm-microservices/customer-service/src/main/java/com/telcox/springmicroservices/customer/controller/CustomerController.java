@@ -39,4 +39,10 @@ public class CustomerController {
         customerService.deleteCustomer(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/kyc/approve")
+    public ResponseEntity<Void> approveKyc(@PathVariable Long id) {
+        customerService.approveKyc(id);
+        return ResponseEntity.ok().build();
+    }
 }

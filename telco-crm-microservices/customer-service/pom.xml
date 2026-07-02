@@ -127,6 +127,13 @@
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>
 
+        <!-- Keycloak Admin Client -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>24.0.2</version> <!-- Note: should match Keycloak server version approx -->
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -9,4 +9,5 @@ public class InternalCustomerResponse {
     private String phone;
     private String keycloakUserId;
     private String internalKeycloakPassword;
+    private boolean kycApproved;
 }

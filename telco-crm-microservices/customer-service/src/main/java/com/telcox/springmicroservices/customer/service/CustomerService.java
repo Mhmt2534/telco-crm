@@ -19,6 +19,53 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+    private final KeycloakUserService keycloakUserService;
+    private final com.telcox.springmicroservices.customer.repository.OutboxEventRepository outboxEventRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    @Transactional
+    public void approveKyc(Long id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + id));
+
+        if (customer.getStatus() != com.telcox.springmicroservices.customer.domain.enums.CustomerStatus.PENDING) {
+            throw new com.telcox.common.core.exception.BusinessRuleException("Yalnızca PENDING statüsündeki müşteriler onaylanabilir.");
+        }
+
+        // Generate random internal password
+        String internalPassword = java.util.UUID.randomUUID().toString();
+        
+        // Create user in Keycloak
+        String keycloakUserId = keycloakUserService.createCustomerUser(customer.getPhone(), internalPassword);
+
+        // Update Customer Entity
+        customer.setStatus(com.telcox.springmicroservices.customer.domain.enums.CustomerStatus.ACTIVE);
+        customer.setKeycloakUserId(keycloakUserId);
+        customer.setInternalKeycloakPassword(internalPassword);
+
+        customerRepository.save(customer);
+
+        // Create Outbox Event
+        com.telcox.springmicroservices.customer.domain.events.CustomerKYCApprovedEvent eventPayload = com.telcox.springmicroservices.customer.domain.events.CustomerKYCApprovedEvent.builder()
+                .customerId(customer.getId())
+                .phone(customer.getPhone())
+                .keycloakUserId(keycloakUserId)
+                .timestamp(java.time.Instant.now().toString())
+                .build();
+
+        try {
+            com.telcox.springmicroservices.customer.domain.OutboxEvent outboxEvent = new com.telcox.springmicroservices.customer.domain.OutboxEvent();
+            outboxEvent.setAggregateType("Customer");
+            outboxEvent.setAggregateId(String.valueOf(customer.getId()));
+            outboxEvent.setEventType("CustomerKYCApproved");
+            outboxEvent.setPayload(objectMapper.writeValueAsString(eventPayload));
+
+            outboxEventRepository.save(outboxEvent);
+            log.info("KYC onaylandı ve Keycloak kullanıcısı oluşturuldu. Müşteri ID: {}", customer.getId());
+        } catch (Exception e) {
+            throw new RuntimeException("Event serialize edilemedi", e);
+        }
+    }
 
     @Transactional
     public CustomerResponse registerCustomer(CustomerRegistrationRequest request) {
@@ -100,6 +147,7 @@ public class CustomerService {
                 .phone(customer.getPhone())
                 .keycloakUserId(customer.getKeycloakUserId())
                 .internalKeycloakPassword(customer.getInternalKeycloakPassword())
+                .kycApproved(true)
                 .build();
     }
 }
