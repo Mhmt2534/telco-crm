@@ -1,5 +1,6 @@
 package com.telcox.springmicroservices.subscription.dto;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -16,5 +17,5 @@ public record SubscriptionResponse(
         SubscriptionStatus status,
         OffsetDateTime activatedAt,
         OffsetDateTime terminatedAt,
-        OffsetDateTime createdAt
+        Instant createdAt
 ) {}

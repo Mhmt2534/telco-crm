@@ -144,3 +144,6 @@ generated/
 
 
 *.ps1
+
+temp_extract/
+temp_search/

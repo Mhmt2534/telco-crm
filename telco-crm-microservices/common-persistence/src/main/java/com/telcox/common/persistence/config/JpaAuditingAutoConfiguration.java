@@ -37,6 +37,6 @@ public class JpaAuditingAutoConfiguration {
 
     @Bean
     public DateTimeProvider dateTimeProvider() {
-        return () -> Optional.of(OffsetDateTime.now());
+        return () -> Optional.of(java.time.Instant.now());
     }
 }
