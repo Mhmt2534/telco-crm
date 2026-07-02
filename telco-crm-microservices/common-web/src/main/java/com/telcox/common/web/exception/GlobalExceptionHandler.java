@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -61,6 +62,25 @@ public class GlobalExceptionHandler {
                 .toList();
         return build(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR.code(), "validation-error",
                 "Request validation failed", violations);
+    }
+
+    /**
+     * Spring MVC'nin {@link ResponseStatusException}'ını doğru HTTP status ile iletir.
+     * Bu handler olmazsa, 401/404 gibi kasıtlı fırlatılan istisnalar generic Exception handler'a
+     * düşer ve client'a 500 döner — ki bu yanlış davranıştır.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ProblemDetails> handleResponseStatus(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
+        String slug = status.getReasonPhrase().toLowerCase().replace(' ', '-');
+        if (status.is5xxServerError()) {
+            log.error("Server error [{}]: {}", status.value(), ex.getReason(), ex);
+        } else {
+            log.warn("Client error [{}]: {}", status.value(), ex.getReason());
+        }
+        String detail = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+        return build(status, slug.toUpperCase().replace('-', '_'), slug, detail, null);
     }
 
     @ExceptionHandler(Exception.class)

@@ -10,8 +10,23 @@ spring:
     url: jdbc:postgresql://localhost:5433/identity_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+# ── Keycloak bağlantı parametreleri ────────────────────────────────────────
+# client-secret değerini `setx KEYCLOAK_CLIENT_SECRET <değer>` ile set edin.
+# Keycloak host'ta 9011, docker ağında keycloak:8080 portunda çalışıyor.
+keycloak:
+  server-url: ${KEYCLOAK_SERVER_URL:http://localhost:9011}
+  realm: ${KEYCLOAK_REALM:telco-crm-realm}
+  client-id: ${KEYCLOAK_CLIENT_ID:telco-crm-client}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:changeme-set-via-setx}
 
 logging:
   level:
     root: INFO
     com.telcox: DEBUG
+    org.springframework.web.client: DEBUG

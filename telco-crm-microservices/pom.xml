@@ -29,7 +29,9 @@
         <spring-cloud.version>2025.1.1</spring-cloud.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <springdoc-openapi.version>3.0.3</springdoc-openapi.version>
-        <keycloak.version>26.2.5</keycloak.version>
+        <!-- Keycloak Admin Client — docker-compose'daki Keycloak sunucu sürümüyle (24.0.5) eşleştirildi.
+             NOT: identity-service pom.xml'de explicit version override mevcuttur. -->
+        <keycloak.version>24.0.5</keycloak.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
     </properties>
@@ -138,6 +140,12 @@
     </dependencies>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <!-- Compiler configuration with annotation processor options (Lombok and MapStruct) -->
@@ -153,6 +161,7 @@
                             <path>
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
                             </path>
                             <!-- MapStruct annotation processor -->
                             <path>

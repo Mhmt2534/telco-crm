@@ -1,4 +1,4 @@
-﻿server:
+server:
   port: 9001
 
 spring:
@@ -6,8 +6,42 @@ spring:
     name: identity-service
   config:
     import: "optional:configserver:http://localhost:8888"
+  # Redis — OTP storage (TTL 5 dk), DI ile StringRedisTemplate inject edilir
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+# ── Keycloak bağlantı placeholder'ları ─────────────────────────────────────
+# Gerçek değerleri application-dev.yml (config-repo) veya env variable'dan gelir.
+# `client-secret` için: setx KEYCLOAK_CLIENT_SECRET <değer>
+keycloak:
+  server-url: ${KEYCLOAK_SERVER_URL:http://localhost:9011}
+  realm: ${KEYCLOAK_REALM:telco-crm-realm}
+  client-id: ${KEYCLOAK_CLIENT_ID:telco-crm-client}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:changeme-set-via-setx}
 
 eureka:
   client:
     service-url:
       defaultZone: http://${EUREKA_USERNAME:eureka}:${EUREKA_PASSWORD:eureka}@localhost:8761/eureka/
+
+# ── Springdoc OpenAPI ───────────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true   # /actuator/health/liveness + /actuator/health/readiness

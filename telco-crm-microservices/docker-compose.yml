@@ -420,6 +420,7 @@ services:
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_0: file:/config-repo/configs/{application}
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_1: file:/config-repo/configs
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-changeme-set-via-setx}
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     volumes:
