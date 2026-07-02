@@ -146,7 +146,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: subscription_db
     ports:
-      - "5437:5432"
+      - "15437:5432"
     volumes:
       - subscription-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -198,7 +198,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: usage_db
     ports:
-      - "5439:5432"
+      - "15439:5432"
     volumes:
       - usage-db-data:/var/lib/postgresql/data
     healthcheck:

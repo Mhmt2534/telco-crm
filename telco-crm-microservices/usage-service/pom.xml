@@ -139,7 +139,7 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
                 <configuration>
-                    <url>jdbc:postgresql://localhost:5439/usage_db</url>
+                    <url>jdbc:postgresql://localhost:15439/usage_db</url>
                     <user>postgres</user>
                     <password>postgres</password>
                     <locations>
