@@ -118,6 +118,25 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 
+### KART 2.5: [CUSTOMER] Temel Müşteri Eventlerinin Üretilmesi (YENİ KART)
+* **Açıklama:**: Müşteri kaydı ve güncellemelerinin sistemin diğer parçalarına duyurulması için event üretimi.
+
+* **Atanan Kişi:**: Mahmut · Tech Lead
+
+* **Öncelik:**: Orta
+
+* **Bağımlılık**: KART 02
+
+* **Kabul Kriterleri (Checklist)**:
+
+* [ ] KART 02'de yazılmış olan `POST /api/v1/customers` endpoint'i başarılı çalıştığında, aynı transaction içerisinde Debezium Outbox tablosuna `CustomerRegistered` eventi yazılmalı.
+
+* [ ] Müşteri güncellendiğinde veya silindiğinde (`is_deleted = true`) `CustomerUpdated` eventi outbox'a eklenmeli.
+
+* **Kullanılacak Teknolojiler**: Spring Data JPA, Debezium CDC
+
+
+
 ### KART 03: [CUSTOMER] KYC Onayı & Keycloak Kullanıcı Senkronizasyonu (YENİ)
 
 * **Açıklama:** Saha bayisi tarafından açılan müşteri başvurusunun admin onayından geçmesi, onay anında müşterinin Keycloak'ta bir kimlik kazanması (böylece OTP ile giriş yapabilir hale gelmesi) ve bu değişikliğin Debezium ile dış dünyaya duyurulması.
@@ -182,6 +201,13 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * [ ] Abonelikler tarife kimliği yerine `tariffCode` üzerinden eşleşmeli ve faturaya o versiyonun snapshot fiyatı yansıtılmalı.
+
+
+* [ ] Yeni bir tarife yaratıldığında `TariffCreated` eventi Debezium Outbox tablosuna yazılmalı.
+
+
+* [ ] Tarife fiyatı veya detayları güncellenip yeni bir versiyon satırı oluşturulduğunda `TariffPriceChanged` eventi outbox'a fırlatılmalı.
+
 
 
 
@@ -511,7 +537,10 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * [ ] `order-service` içerisinde senkron müşteri ve katalog kontrolleri bittikten sonra çalışacak bir `SagaOrchestrator` bileşeni yazılmalı.
 
 
-* [ ] Orkestratör sırasıyla; outbox tablosuna ödeme emri yazmalı -> Ödeme servisinden onay Debezium-Kafka üzerinden gelince `SagaState` tablosunu `STEP_2` yapmalı -> Abonelik servisine aktivasyon emri göndermeli.
+* [ ] [GÜNCELLENEN SAGA ADIM 1] Orkestratör işlemi başlatmak için outbox tablosuna `OrderCreated` eventi yazmalı.
+
+
+* [ ] [GÜNCELLENEN SAGA ADIM 2] Orkestratör, ödeme servisinden gelecek `PaymentCompleted` eventini Kafka'dan dinlemeli. Bu event gelince `SagaState` tablosunu `STEP_2` yapmalı ve sipariş durumunu `PAID` yaparak outbox'a `OrderConfirmed` eventi fırlatmalı.
 
 
 * [ ] Abonelik servisinden `SubscriptionActivatedEvent` başarıyla alındığında sipariş durumu `FULFILLED` konumuna çekilmeli ve Saga durumu `COMPLETED` olarak işaretlenmeli.
@@ -520,6 +549,63 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kullanılacak Teknolojiler:** Spring Kafka, Debezium CDC, Apache Kafka 3.7
+
+
+### KART 15.1: [PAYMENT] OrderCreated Tüketicisi ve Ödeme İşlemi
+
+* **Açıklama:** Ödeme servisinin Saga orkestrasyonuna dahil olması ve sanal POS (PSP) entegrasyonu.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 15
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] `payment-service`, Kafka'dan Saga'nın başlattığı `OrderCreated` eventini dinlemeli.
+
+
+* [ ] Başarılı (Mock) ödeme sonucu veritabanına yazılmalı ve outbox'a `PaymentCompleted` eventi fırlatılmalı.
+
+
+* [ ] Bakiye yetersizliği vb. durumlarda ödeme red yerse `PaymentFailed` eventi fırlatılmalı.
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, Debezium
+
+
+
+### KART 15.3: [SUBSCRIPTION] OrderConfirmed Tüketicisi ve Aktivasyon
+
+* **Açıklama:** Sipariş onaylandığında aboneye numara tahsis edilmesi ve aboneliğin başlatılması.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 15, KART 07
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] `subscription-service`, Kafka üzerinden `OrderConfirmed` eventini dinlemeli.
+
+
+* [ ] KART 07'de yazılan Redisson Distributed Lock mantığı çağrılarak havuza girilmeli ve numara (MSISDN) tahsis edilip abonelik statüsü `ACTIVE` yapılmalı.
+
+
+* [ ] İşlem bitiminde outbox tablosuna hem `SubscriptionActivated` hem de `MSISDNAllocated` eventleri yazılmalı.
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, Redisson
 
 
 
@@ -613,6 +699,90 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 
+### KART 18.1: [BILLING] SubscriptionActivated Tüketicisi ve BillCycle Oluşturumu
+
+* **Açıklama:** Yeni bir abone katıldığında Billing sisteminde o aboneye ait fatura kesim döngüsünün başlatılması.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 15.3, KART 18
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] billing-service Kafka'dan `SubscriptionActivated` eventini dinlemeli.
+
+
+* [ ] Bu aboneye ait (fatura kesim gününü belirleyen) veritabanında yeni bir `BillCycle` kaydı oluşturulmalı. (Kart 18'deki Scheduler işi artık doğrudan bu tabloyu referans alacaktır).
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, Spring Data JPA
+
+
+
+### KART 18.2: [BILLING] Fatura Gecikme (Overdue) Kontrolcüsü
+
+* **Açıklama:** Son ödeme tarihi geçen ödenmemiş faturaların tespiti.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Orta
+
+
+* **Bağımlılık:** KART 18
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] Günlük çalışan bir `@Scheduled` cron job, durumu `UNPAID olan` ve `dueDate` tarihi dünü geçen faturaları tespit etmeli.
+
+
+* [ ] Bu faturaların durumunu `OVERDUE` (Gecikmiş) olarak güncelleyip outbox'a `InvoiceOverdue` eventi fırlatmalı.
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Scheduler, PostgreSQL
+
+
+### KART 18.3: [BILLING] Fatura Ödeme (InvoicePaid) Tüketicisi
+
+* **Açıklama:** Müşteri faturasını ödediğinde sistemin faturayı kapatıp durumu duyurması.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 18, KART 19
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] billing-service, ödeme sisteminden gelen `PaymentCompleted` eventini (fatura ödemesi ise) dinlemeli.
+
+
+* [ ] İlgili faturanın durumu DB'de `PAID` yapılmalı.
+
+
+* [ ] Fatura başarıyla kapatıldıktan sonra Outbox tablosuna `InvoicePaid` eventi yazılmalı.
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, Debezium
+
+
+
+
 ### KART 19: [PAYMENT] Idempotency-Key Kontrolü & Akıllı Ödeme Retry Zamanlayıcısı
 
 * **Açıklama:** Ağ kesintisi veya kullanıcının butona çift basması durumunda karttan iki kez para çekilmesinin kesin olarak engellenmesi ve hata alan faturaların otomatik takibi.
@@ -635,6 +805,9 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * [ ] Başarısız ödemeler için kart hata koduna göre tetiklenen bir Scheduler kurulmalı; ödeme girişimleri sırasıyla 24, 72 ve 168 saatlik periyotlarla otomatik olarak tekrar POS'a gönderilmeli.
+
+
+* [ ] İşlem başarıyla sonuçlanırsa `PaymentCompleted`, tamamen başarısız olursa (retry'lar bittikten sonra) `PaymentFailed` eventi outbox tablosuna yazılmalı.
 
 
 
@@ -673,6 +846,36 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 
+### KART 20.5: [USAGE] Kota Eşik (Threshold) Eventlerinin Üretilmesi
+
+* **Açıklama:** Kullanım servisinin anlık kotaları düşerken %80 ve %100 sınırlarını tespit edip müşteriye SMS atılması için event fırlatması.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 11
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] KART 09'da gelen çağrı kayıtları düşüldükten hemen sonra kalan kota yüzdesi hesaplanmalı.
+
+
+* [ ] Kullanım oranı %80'i aştıysa `QuotaThresholdReached` eventi outbox'a yazılmalı.
+
+
+* [ ] Kullanım %100'e düştüyse (tüm haklar bittiyse) `QuotaExceeded` eventi outbox'a atılmalı.
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Boot, Debezium
+
+
+
 ### KART 21: [TICKET] Destek Talebi Yönetimi & SLA Zaman Aşımı Kontrolü
 
 * **Açıklama:** Müşterilerin çağrı merkezine ilettiği arıza ve şikayetlerin durum takibi ve çözüm sürelerinin yasal sınır kontrolü.
@@ -700,6 +903,40 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kullanılacak Teknolojiler:** Spring Boot, Spring Data JPA, Spring Scheduler, Debezium CDC
+
+
+
+### KART 21.5: [NOTIFICATION] Merkezi Domain Event Tüketicisi (Consumer)
+
+* **Açıklama:** Notification servisinin tüm sistemde akan eventleri dinleyerek (Consume) gerçek iletişim aksiyonlarına (SMS/Email) dönüştürmesi.
+
+
+* **Atanan Kişi:** Osman · İletişim & QA
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 10, KART 15.3, KART 18, KART 20
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] `SubscriptionActivated` eventi dinlenmeli ve aboneye "Hoş Geldiniz" SMS'i atılmalı.
+
+
+* [ ] `InvoiceGenerated` eventi dinlenmeli, faturanın PDF URL'si (MinIO'dan gelen) şablona yerleştirilerek e-posta gönderimi tetiklenmeli.
+
+
+* [ ] `QuotaThresholdReached` ve `QuotaExceeded` eventleri dinlenerek aboneye kota aşım uyarı bildirimleri iletilmeli.
+
+
+* [ ] `InvoiceOverdue` dinlenmeli ve aboneye Fatura Gecikme Uyarı SMS'i atılmalı.
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, Java Mail Sender, Mailpit
+
 
 
 
