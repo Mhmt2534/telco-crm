@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5440/notification_db
+    username: postgres
+    password: postgres
+  flyway:
+    url: jdbc:postgresql://localhost:5440/notification_db
+    user: postgres
+    password: postgres
+  kafka:
+    bootstrap-servers: localhost:29095
+  data:
+    redis:
+      host: localhost
+      port: 6379

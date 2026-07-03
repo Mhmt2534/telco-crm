@@ -17,5 +17,5 @@ public record SubscriptionResponse(
         SubscriptionStatus status,
         OffsetDateTime activatedAt,
         OffsetDateTime terminatedAt,
-        Instant createdAt
+        OffsetDateTime createdAt
 ) {}
