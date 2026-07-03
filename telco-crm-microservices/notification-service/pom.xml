@@ -114,6 +114,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Mail Support -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Springdoc OpenAPI Swagger Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
