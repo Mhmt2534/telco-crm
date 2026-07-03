@@ -22,6 +22,7 @@ public class CustomerService {
     private final KeycloakUserService keycloakUserService;
     private final com.telcox.springmicroservices.customer.repository.OutboxEventRepository outboxEventRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
     public void approveKyc(Long id) {
@@ -68,6 +69,7 @@ public class CustomerService {
 
             outboxEventRepository.save(outboxEvent);
             log.info("KYC onaylandı ve Keycloak kullanıcısı oluşturuldu. Müşteri ID: {}", customer.getId());
+            outboxEventPublisher.publishCustomerUpdated(customer, "KYC_APPROVED");
         } catch (Exception e) {
             throw new RuntimeException("Event serialize edilemedi", e);
         }
@@ -96,6 +98,7 @@ public class CustomerService {
 
         Customer savedCustomer = customerRepository.save(customer);
         log.info("Müşteri başarıyla kaydedildi. Müşteri ID: {}", savedCustomer.getId());
+        outboxEventPublisher.publishCustomerRegistered(savedCustomer);
 
         return customerMapper.toResponse(savedCustomer);
     }
@@ -129,6 +132,7 @@ public class CustomerService {
         }
 
         Customer updatedCustomer = customerRepository.save(customer);
+        outboxEventPublisher.publishCustomerUpdated(updatedCustomer, "PROFILE_UPDATE");
         return customerMapper.toResponse(updatedCustomer);
     }
 
@@ -138,6 +142,7 @@ public class CustomerService {
                 .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + id));
         customer.setDeleted(true);
         customerRepository.save(customer);
+        outboxEventPublisher.publishCustomerUpdated(customer, "CUSTOMER_DELETED");
     }
 
     @Transactional(readOnly = true)
