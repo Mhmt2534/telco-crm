@@ -617,6 +617,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -1024,6 +1025,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       # Geliştirme ortamında (http) çalışabilmesi için proxy modunu açıyoruz.
       KC_PROXY: edge
+      KC_FEATURES: scripts
     command: start-dev --import-realm # Lokal geliştirme modu
     ports:
       - "${KEYCLOAK_PORT:-9011}:8080" # api-gateway(8080) ile çakışmaması için 9011'e bind edilmiştir.
@@ -1056,6 +1058,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis

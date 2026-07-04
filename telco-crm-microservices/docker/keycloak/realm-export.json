@@ -506,6 +506,11 @@
         "default-roles-telco-crm-realm"
       ],
       "clientRoles": {
+        "realm-management": [
+          "realm-admin",
+          "manage-users",
+          "view-users"
+        ],
         "telco-crm-client": [
           "uma_protection"
         ]
@@ -824,7 +829,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "B3Zlh6fORItPVGdybGkILIkH9S3hQgex",
       "redirectUris": [
         "*"
       ],
@@ -838,7 +843,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "authorizationServicesEnabled": true,
+      "authorizationServicesEnabled": false,
       "publicClient": false,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
@@ -911,50 +916,7 @@
         "phone",
         "offline_access",
         "microprofile-jwt"
-      ],
-      "authorizationSettings": {
-        "allowRemoteResourceManagement": true,
-        "policyEnforcementMode": "ENFORCING",
-        "resources": [
-          {
-            "name": "Default Resource",
-            "type": "urn:telco-crm-client:resources:default",
-            "ownerManagedAccess": false,
-            "attributes": {},
-            "_id": "a59158dd-b422-4999-ae6b-2331ba56e086",
-            "uris": [
-              "/*"
-            ]
-          }
-        ],
-        "policies": [
-          {
-            "id": "44d54088-5263-448d-9b36-0029786da03b",
-            "name": "Default Policy",
-            "description": "A policy that grants access only for users within this realm",
-            "type": "js",
-            "logic": "POSITIVE",
-            "decisionStrategy": "AFFIRMATIVE",
-            "config": {
-              "code": "// by default, grants any permission associated with this policy\n$evaluation.grant();\n"
-            }
-          },
-          {
-            "id": "6f4f9968-c207-44e6-b426-77405d1c4443",
-            "name": "Default Permission",
-            "description": "A permission that applies to the default resource type",
-            "type": "resource",
-            "logic": "POSITIVE",
-            "decisionStrategy": "UNANIMOUS",
-            "config": {
-              "defaultResourceType": "urn:telco-crm-client:resources:default",
-              "applyPolicies": "[\"Default Policy\"]"
-            }
-          }
-        ],
-        "scopes": [],
-        "decisionStrategy": "UNANIMOUS"
-      }
+      ]
     }
   ],
   "clientScopes": [

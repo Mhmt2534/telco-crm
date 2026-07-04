@@ -22,7 +22,7 @@ app:
     pii-encryption-key: ${PII_ENCRYPTION_KEY:default-dev-key-32-chars-long!!!}
 
 keycloak:
-  server-url: http://localhost:9011
+  server-url: ${KEYCLOAK_SERVER_URL:http://localhost:9011}
   realm: telco-crm-realm
   client-id: telco-crm-client
   client-secret: B3Zlh6fORItPVGdybGkILIkH9S3hQgex

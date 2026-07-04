@@ -20,7 +20,7 @@ CREATE TABLE msisdn_pool (
 
 CREATE TABLE subscriptions (
     id UUID PRIMARY KEY,
-    customer_id UUID NOT NULL,
+    customer_id BIGINT NOT NULL,
     msisdn VARCHAR(20) NOT NULL,
     tariff_code VARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
