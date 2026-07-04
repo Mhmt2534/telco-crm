@@ -16,7 +16,7 @@ import jakarta.persistence.Table;
 public class Subscription extends BaseEntity {
 
     @Column(name = "customer_id", nullable = false)
-    private UUID customerId;
+    private Long customerId;
 
     @Column(nullable = false, length = 20)
     private String msisdn;
@@ -36,8 +36,8 @@ public class Subscription extends BaseEntity {
 
     public Subscription() {}
 
-    public UUID getCustomerId() { return customerId; }
-    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
 
     public String getMsisdn() { return msisdn; }
     public void setMsisdn(String msisdn) { this.msisdn = msisdn; }
