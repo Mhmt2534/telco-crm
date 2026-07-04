@@ -10,6 +10,7 @@ import com.telcox.springmicroservices.productcatalog.service.TariffService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,21 @@ public class TariffController {
 
     @GetMapping
     public ResponseEntity<Page<TariffResponse>> getActiveTariffs(Pageable pageable) {
-        Page<TariffResponse> page = tariffService.getActiveTariffs(pageable).map(catalogMapper::toResponse);
+        List<Tariff> allTariffs = tariffService.getAllActiveTariffsList();
+        
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allTariffs.size());
+        
+        List<TariffResponse> responses;
+        if (start > allTariffs.size()) {
+            responses = List.of();
+        } else {
+            responses = allTariffs.subList(start, end).stream()
+                    .map(catalogMapper::toResponse)
+                    .toList();
+        }
+        
+        Page<TariffResponse> page = new PageImpl<>(responses, pageable, allTariffs.size());
         return ResponseEntity.ok(page);
     }
 

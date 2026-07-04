@@ -16,6 +16,19 @@ spring:
     url: jdbc:postgresql://localhost:5435/product_catalog_db
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+  cache:
+    type: redis
+    redis:
+      enable-statistics: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  cache:
+    tariff-list-ttl: 600
+    tariff-detail-ttl: 1800
 
 eureka:
   client:
