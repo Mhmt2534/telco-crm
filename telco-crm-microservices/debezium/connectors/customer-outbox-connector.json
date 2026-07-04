@@ -7,7 +7,7 @@
     "database.user": "postgres",
     "database.password": "postgres",
     "database.dbname": "customer_db",
-    "database.server.name": "telcox.customer",
+    "topic.prefix": "telcox.customer",
     "table.include.list": "public.outbox_event",
     "plugin.name": "pgoutput",
     "slot.name": "customer_outbox_slot",
