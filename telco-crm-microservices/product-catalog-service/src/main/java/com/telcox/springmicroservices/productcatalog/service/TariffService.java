@@ -10,6 +10,9 @@ import com.telcox.springmicroservices.productcatalog.repository.TariffAddonRepos
 import com.telcox.springmicroservices.productcatalog.repository.TariffRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,6 +34,7 @@ public class TariffService {
     private final CatalogMapper catalogMapper;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
+    @CacheEvict(cacheNames = "catalog", key = "'tariff:all'")
     public Tariff createTariff(TariffRequest request) {
         if (tariffRepository.existsByCodeAndStatus(request.code(), CatalogStatus.ACTIVE)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bu code ile aktif tarife zaten mevcut, güncelleme için PUT kullanın");
@@ -52,12 +56,23 @@ public class TariffService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "catalog", key = "'tariff:all'")
+    public List<Tariff> getAllActiveTariffsList() {
+        return tariffRepository.findByStatus(CatalogStatus.ACTIVE, Pageable.unpaged()).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "catalog", key = "'tariff:' + #code")
     public Tariff getActiveTariffByCode(String code) {
         return tariffRepository.findByCodeAndStatus(code, CatalogStatus.ACTIVE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tariff not found"));
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "catalog", key = "'tariff:all'"),
+        @CacheEvict(cacheNames = "catalog", key = "'tariff:' + #code")
+    })
     public Tariff updateTariff(String code, TariffRequest request) {
         if (!code.equals(request.code())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code değiştirilemez");
@@ -98,6 +113,10 @@ public class TariffService {
     }
 
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "catalog", key = "'tariff:all'"),
+        @CacheEvict(cacheNames = "catalog", key = "'tariff:' + #code")
+    })
     public void deleteTariff(String code) {
         Tariff activeTariff = tariffRepository.findByCodeAndStatus(code, CatalogStatus.ACTIVE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active tariff not found"));
