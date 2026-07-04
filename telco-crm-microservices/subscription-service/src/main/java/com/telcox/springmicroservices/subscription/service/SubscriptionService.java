@@ -1,6 +1,6 @@
 package com.telcox.springmicroservices.subscription.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -46,7 +46,7 @@ public class SubscriptionService {
         subscription.setMsisdn(msisdn);
         subscription.setTariffCode(request.tariffCode());
         subscription.setStatus(SubscriptionStatus.ACTIVE);
-        subscription.setActivatedAt(OffsetDateTime.now());
+        subscription.setActivatedAt(Instant.now());
 
         subscriptionRepository.save(subscription);
 
@@ -120,7 +120,7 @@ public class SubscriptionService {
                         "Abonelik bulunamadı: " + subscriptionId));
 
         subscription.setStatus(SubscriptionStatus.TERMINATED);
-        subscription.setTerminatedAt(OffsetDateTime.now());
+        subscription.setTerminatedAt(Instant.now());
         subscriptionRepository.save(subscription);
 
         // MSISDN'i tekrar FREE durumuna al (havuza geri dön)

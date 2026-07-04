@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: cdr-simulator
+
+  kafka:
+    bootstrap-servers: localhost:29095
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+# CDR Simülatör Konfigürasyonu
+# Bu değerleri değiştirerek yük testini ayarlayabilirsiniz
+simulator:
+  enabled: true
+  topic: telco.usage.events
+  events-per-second: 100
+  target-msisdns:
+    - "5321112233"
+    - "5339998877"
+    - "5351234567"
+    - "5367654321"
+    - "5381122334"
+
+logging:
+  level:
+    com.telcox: INFO

@@ -1,8 +1,13 @@
-package com.telcox.springmicroservices.usage.dto;
+package com.telcox.springmicroservices.cdrsimulator.dto;
 
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * CDR (Call Detail Record) event'i.
+ * usage-service'teki CdrRecordedEvent ile birebir aynı yapıdadır.
+ * Kafka'daki telco.usage.events topic'ine bu nesne JSON olarak basılır.
+ */
 public class CdrRecordedEvent {
 
     private UUID subscriptionId;
@@ -13,6 +18,16 @@ public class CdrRecordedEvent {
     private Instant recordedAt;
 
     public CdrRecordedEvent() {
+    }
+
+    public CdrRecordedEvent(UUID subscriptionId, String msisdn, String type,
+                             Double amount, String cdrRef, Instant recordedAt) {
+        this.subscriptionId = subscriptionId;
+        this.msisdn = msisdn;
+        this.type = type;
+        this.amount = amount;
+        this.cdrRef = cdrRef;
+        this.recordedAt = recordedAt;
     }
 
     public UUID getSubscriptionId() {

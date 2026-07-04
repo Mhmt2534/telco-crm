@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -80,7 +80,7 @@ public class QuotaService {
         record.setType(type);
         record.setQuantity(amount); // Entity field is quantity
         record.setCdrRef(event.getCdrRef());
-        record.setRecordedAt(event.getRecordedAt() != null ? event.getRecordedAt() : OffsetDateTime.now());
+        record.setRecordedAt(event.getRecordedAt() != null ? event.getRecordedAt() : Instant.now());
         usageRecordRepository.save(record);
 
         log.info("Processed CDR: {} amount of {} for MSISDN: {}", amount, type, event.getMsisdn());
