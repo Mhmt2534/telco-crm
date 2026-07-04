@@ -69,6 +69,13 @@ public class GlobalExceptionHandler {
      * Bu handler olmazsa, 401/404 gibi kasıtlı fırlatılan istisnalar generic Exception handler'a
      * düşer ve client'a 500 döner — ki bu yanlış davranıştır.
      */
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<ProblemDetails> handleIllegalStateOrArgument(RuntimeException ex) {
+        log.warn("Illegal argument or state [400]: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR.code(), "bad-request",
+                ex.getMessage(), null);
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ProblemDetails> handleResponseStatus(ResponseStatusException ex) {
         HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
