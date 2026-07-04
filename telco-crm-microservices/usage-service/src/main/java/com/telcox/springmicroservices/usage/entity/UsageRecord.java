@@ -1,6 +1,6 @@
 package com.telcox.springmicroservices.usage.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.telcox.common.persistence.entity.BaseEntity;
@@ -44,7 +44,7 @@ public class UsageRecord extends BaseEntity {
     private String cdrRef;
 
     @Column(name = "recorded_at", nullable = false)
-    private OffsetDateTime recordedAt;
+    private Instant recordedAt;
 
     public UsageRecord() {}
 
@@ -53,7 +53,7 @@ public class UsageRecord extends BaseEntity {
                        UsageType type,
                        Double quantity,
                        String cdrRef,
-                       OffsetDateTime recordedAt) {
+                       Instant recordedAt) {
         this.subscriptionId = subscriptionId;
         this.msisdn         = msisdn;
         this.type           = type;
@@ -79,6 +79,6 @@ public class UsageRecord extends BaseEntity {
     public String getCdrRef()                              { return cdrRef; }
     public void setCdrRef(String cdrRef)                   { this.cdrRef = cdrRef; }
 
-    public OffsetDateTime getRecordedAt()                  { return recordedAt; }
-    public void setRecordedAt(OffsetDateTime recordedAt)   { this.recordedAt = recordedAt; }
+    public Instant getRecordedAt()                  { return recordedAt; }
+    public void setRecordedAt(Instant recordedAt)   { this.recordedAt = recordedAt; }
 }

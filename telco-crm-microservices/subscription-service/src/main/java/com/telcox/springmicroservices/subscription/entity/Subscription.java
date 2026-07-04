@@ -1,6 +1,6 @@
 package com.telcox.springmicroservices.subscription.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.telcox.common.persistence.entity.BaseEntity;
@@ -29,10 +29,10 @@ public class Subscription extends BaseEntity {
     private SubscriptionStatus status;
 
     @Column(name = "activated_at", nullable = false)
-    private OffsetDateTime activatedAt;
+    private Instant activatedAt;
 
     @Column(name = "terminated_at")
-    private OffsetDateTime terminatedAt;
+    private Instant terminatedAt;
 
     public Subscription() {}
 
@@ -48,9 +48,9 @@ public class Subscription extends BaseEntity {
     public SubscriptionStatus getStatus() { return status; }
     public void setStatus(SubscriptionStatus status) { this.status = status; }
 
-    public OffsetDateTime getActivatedAt() { return activatedAt; }
-    public void setActivatedAt(OffsetDateTime activatedAt) { this.activatedAt = activatedAt; }
+    public Instant getActivatedAt() { return activatedAt; }
+    public void setActivatedAt(Instant activatedAt) { this.activatedAt = activatedAt; }
 
-    public OffsetDateTime getTerminatedAt() { return terminatedAt; }
-    public void setTerminatedAt(OffsetDateTime terminatedAt) { this.terminatedAt = terminatedAt; }
+    public Instant getTerminatedAt() { return terminatedAt; }
+    public void setTerminatedAt(Instant terminatedAt) { this.terminatedAt = terminatedAt; }
 }

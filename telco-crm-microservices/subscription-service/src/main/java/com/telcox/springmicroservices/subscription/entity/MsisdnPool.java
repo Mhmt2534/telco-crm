@@ -1,6 +1,6 @@
 package com.telcox.springmicroservices.subscription.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +23,7 @@ public class MsisdnPool {
     private MsisdnStatus status;
 
     @Column(name = "reserved_until")
-    private OffsetDateTime reservedUntil;
+    private Instant reservedUntil;
 
     @Version
     @Column(nullable = false)
@@ -31,7 +31,7 @@ public class MsisdnPool {
 
     public MsisdnPool() {}
 
-    public MsisdnPool(String msisdn, MsisdnStatus status, OffsetDateTime reservedUntil, Long version) {
+    public MsisdnPool(String msisdn, MsisdnStatus status, Instant reservedUntil, Long version) {
         this.msisdn = msisdn;
         this.status = status;
         this.reservedUntil = reservedUntil;
@@ -43,8 +43,8 @@ public class MsisdnPool {
     public MsisdnStatus getStatus() { return status; }
     public void setStatus(MsisdnStatus status) { this.status = status; }
 
-    public OffsetDateTime getReservedUntil() { return reservedUntil; }
-    public void setReservedUntil(OffsetDateTime reservedUntil) { this.reservedUntil = reservedUntil; }
+    public Instant getReservedUntil() { return reservedUntil; }
+    public void setReservedUntil(Instant reservedUntil) { this.reservedUntil = reservedUntil; }
 
     public Long getVersion() { return version; }
 }
