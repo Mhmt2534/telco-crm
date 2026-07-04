@@ -16,7 +16,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;
-import lombok.Getter;
 
 /**
  * Base class for every JPA entity in the platform. Provides a UUID primary key, optimistic
@@ -26,7 +25,6 @@ import lombok.Getter;
  * <p>Soft delete is intentionally NOT part of the base class: only specific aggregates
  * (e.g. Customer) require it, and they should add their own {@code deletedAt} + filter.</p>
  */
-@Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
@@ -55,4 +53,28 @@ public abstract class BaseEntity {
     @Version
     @Column(name = "version", nullable = false)
     private Long version;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
 }
