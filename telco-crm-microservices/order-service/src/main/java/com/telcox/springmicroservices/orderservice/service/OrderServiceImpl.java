@@ -32,7 +32,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final SagaStateRepository sagaStateRepository;
     private final OutboxEventRepository outboxEventRepository;
-    private final OrderMapper orderMapper;
+    private final OrderMapper orderMapper = org.mapstruct.factory.Mappers.getMapper(OrderMapper.class);
     private final ObjectMapper objectMapper;
 
     @Override
