@@ -1,0 +1,1 @@
+23:38:35,388 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [PATTERN_CONSOLE] not referenced. Skipping further processing.

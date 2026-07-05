@@ -31,14 +31,26 @@
         </dependency>
 
         <!-- ── Cross-cutting observability (uniform for every module incl. the reactive gateway) ── -->
-        <!-- Distributed tracing: Micrometer + OpenTelemetry bridge with Zipkin exporter -->
+        <!-- Distributed tracing: Micrometer + Brave bridge with Zipkin reporter -->
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-zipkin</artifactId>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-reporter-brave</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-sender-urlconnection</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-micrometer-tracing-brave</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-zipkin</artifactId>
         </dependency>
 
         <!-- Prometheus metrics registry (active when actuator is on the classpath) -->

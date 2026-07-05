@@ -50,7 +50,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * [ ] Mikroservislerin konuşacağı bir Client oluşturulup gizli anahtarı (Client Secret) .env dosyasına alınmalı ya da windows da setx ile tutulmalı.
 
 
-* [ ] Projenin gerçek iş kurallarına uygun olarak ADMIN, DEALER (Saha Bayisi) ve MUSTERI rolleri Keycloak arayüzünden Realm Roles olarak tanımlanmalı.
+* [ ] Projenin gerçek iş kurallarına uygun olarak ADMIN, DEALER (Saha Bayisi) ve CUSTOMER rolleri Keycloak arayüzünden Realm Roles olarak tanımlanmalı.
 
 
 
@@ -472,7 +472,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `api-gateway` projesinin application.yml dosyasına Keycloak'un Issuer URI (Örn: `http://localhost:8080/realms/telco-crm-realm`) adresi eklenmeli.
+* [ ] `api-gateway` projesinin application.yml dosyasına Keycloak'un Issuer URI (Örn: `http://localhost:8081/realms/telco-crm-realm`) adresi eklenmeli.
 
 
 * [ ] Gateway'e gelen her istekteki JWT token, Keycloak'un public key'i (JWKS) üzerinden Spring Security tarafından otomatik doğrulanmalı (Custom filtre yazmaya gerek kalmayacak).
