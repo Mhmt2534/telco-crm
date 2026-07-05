@@ -6,6 +6,15 @@ spring:
     name: api-gateway
   config:
     import: "optional:configserver:http://localhost:8888"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9011/realms/telco-crm-realm
+  data:
+    redis:
+      host: localhost
+      port: 6379
   cloud:
     gateway:
       server:
@@ -19,42 +28,102 @@ spring:
               uri: lb://identity-service
               predicates:
                 - Path=/api/v1/auth, /api/v1/auth/**, /api/v1/users, /api/v1/users/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: customer-service
               uri: lb://customer-service
               predicates:
                 - Path=/api/v1/customers, /api/v1/customers/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: product-catalog-service
               uri: lb://product-catalog-service
               predicates:
                 - Path=/api/v1/tariffs, /api/v1/tariffs/**, /api/v1/addons, /api/v1/addons/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: order-service
               uri: lb://order-service
               predicates:
                 - Path=/api/v1/orders, /api/v1/orders/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: subscription-service
               uri: lb://subscription-service
               predicates:
                 - Path=/api/v1/subscriptions, /api/v1/subscriptions/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: usage-service
               uri: lb://usage-service
               predicates:
                 - Path=/api/v1/usage, /api/v1/usage/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: billing-service
               uri: lb://billing-service
               predicates:
                 - Path=/api/v1/invoices, /api/v1/invoices/**, /api/v1/billing, /api/v1/billing/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: payment-service
               uri: lb://payment-service
               predicates:
                 - Path=/api/v1/payments, /api/v1/payments/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: notification-service
               uri: lb://notification-service
               predicates:
                 - Path=/api/v1/notifications, /api/v1/notifications/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
             - id: ticket-service
               uri: lb://ticket-service
               predicates:
                 - Path=/api/v1/tickets, /api/v1/tickets/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 20
+                    key-resolver: "#{@userKeyResolver}"
 
 eureka:
   client:
