@@ -117,8 +117,8 @@
                 <version>${keycloak.version}</version>
             </dependency>
 
-            <!-- Distributed tracing artifacts (micrometer-tracing-bridge-otel,
-                 opentelemetry-exporter-zipkin) are version-managed by the Spring Boot BOM
+            <!-- Distributed tracing artifacts (micrometer-tracing-bridge-brave,
+                 zipkin-reporter-brave) are version-managed by the Spring Boot BOM
                  inherited from the parent; declare them as dependencies without a version. -->
 
             <!-- Structured JSON logging encoder (not managed by Spring Boot BOM) -->

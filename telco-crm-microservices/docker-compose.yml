@@ -389,6 +389,45 @@ services:
     networks:
       - telco-net
 
+  # ──── Prometheus ────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: telco-prometheus
+    profiles: [ "dbs" ]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    networks:
+      - telco-net
+
+  # ──── Grafana ────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: telco-grafana
+    profiles: [ "dbs" ]
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    networks:
+      - telco-net
+
   # ──── Debezium (Kafka Connect) ────
   debezium:
     image: quay.io/debezium/connect:2.7
