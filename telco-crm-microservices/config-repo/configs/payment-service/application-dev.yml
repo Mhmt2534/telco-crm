@@ -15,3 +15,4 @@ logging:
   level:
     root: INFO
     com.telcox: DEBUG
+    org.flywaydb: DEBUG

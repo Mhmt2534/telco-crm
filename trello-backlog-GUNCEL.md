@@ -566,13 +566,13 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `payment-service`, Kafka'dan Saga'nın başlattığı `OrderCreated` eventini dinlemeli.
+* [x] `payment-service`, Kafka'dan Saga'nın başlattığı `OrderCreated` eventini dinlemeli.
 
 
-* [ ] Başarılı (Mock) ödeme sonucu veritabanına yazılmalı ve outbox'a `PaymentCompleted` eventi fırlatılmalı.
+* [x] Başarılı (Mock) ödeme sonucu veritabanına yazılmalı ve outbox'a `PaymentCompleted` eventi fırlatılmalı.
 
 
-* [ ] Bakiye yetersizliği vb. durumlarda ödeme red yerse `PaymentFailed` eventi fırlatılmalı.
+* [x] Bakiye yetersizliği vb. durumlarda ödeme red yerse `PaymentFailed` eventi fırlatılmalı.
 
 
 
