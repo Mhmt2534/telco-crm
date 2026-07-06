@@ -595,13 +595,14 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kabul Kriterleri (Checklist):**
-* [ ] `subscription-service`, Kafka üzerinden `OrderConfirmed` eventini dinlemeli.
+* [x] `subscription-service`, Kafka üzerinden `OrderConfirmed` eventini dinlemeli.
 
 
-* [ ] KART 07'de yazılan Redisson Distributed Lock mantığı çağrılarak havuza girilmeli ve numara (MSISDN) tahsis edilip abonelik statüsü `ACTIVE` yapılmalı.
+* [x] KART 07'de yazılan Redisson Distributed Lock mantığı çağrılarak havuza girilmeli ve numara (MSISDN) tahsis edilip abonelik statüsü `ACTIVE` yapılmalı.
 
 
-* [ ] İşlem bitiminde outbox tablosuna hem `SubscriptionActivated` hem de `MSISDNAllocated` eventleri yazılmalı.
+* [x] İşlem bitiminde outbox tablosuna hem `SubscriptionActivated` hem de `MSISDNAllocated` eventleri yazılmalı.
+
 
 
 

@@ -9,6 +9,10 @@ import com.telcox.springmicroservices.subscription.dto.SubscriptionResponse;
 import com.telcox.springmicroservices.subscription.entity.Subscription;
 import com.telcox.springmicroservices.subscription.entity.SubscriptionStatus;
 import com.telcox.springmicroservices.subscription.repository.SubscriptionRepository;
+import com.telcox.springmicroservices.subscription.entity.OutboxEvent;
+import com.telcox.springmicroservices.subscription.entity.OutboxStatus;
+import com.telcox.springmicroservices.subscription.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,11 +24,17 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final MsisdnAllocationService msisdnAllocationService;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
-                               MsisdnAllocationService msisdnAllocationService) {
+                               MsisdnAllocationService msisdnAllocationService,
+                               OutboxEventRepository outboxEventRepository,
+                               ObjectMapper objectMapper) {
         this.subscriptionRepository = subscriptionRepository;
         this.msisdnAllocationService = msisdnAllocationService;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -55,6 +65,32 @@ public class SubscriptionService {
 
         log.info("[SUBSCRIPTION] Abonelik başarıyla oluşturuldu. ID: " + subscription.getId()
                 + ", MSISDN: " + msisdn);
+
+        // 4) Outbox tablosuna SubscriptionActivated ve MSISDNAllocated event'lerini yaz
+        try {
+            OutboxEvent subscriptionActivatedEvent = new OutboxEvent();
+            subscriptionActivatedEvent.setEventId(UUID.randomUUID());
+            subscriptionActivatedEvent.setAggregateType("Subscription");
+            subscriptionActivatedEvent.setAggregateId(subscription.getId().toString());
+            subscriptionActivatedEvent.setEventType("SubscriptionActivated");
+            subscriptionActivatedEvent.setPayload(objectMapper.writeValueAsString(subscription));
+            subscriptionActivatedEvent.setStatus(OutboxStatus.PENDING);
+            outboxEventRepository.save(subscriptionActivatedEvent);
+
+            OutboxEvent msisdnAllocatedEvent = new OutboxEvent();
+            msisdnAllocatedEvent.setEventId(UUID.randomUUID());
+            msisdnAllocatedEvent.setAggregateType("Subscription");
+            msisdnAllocatedEvent.setAggregateId(subscription.getId().toString());
+            msisdnAllocatedEvent.setEventType("MSISDNAllocated");
+            msisdnAllocatedEvent.setPayload(objectMapper.writeValueAsString(subscription));
+            msisdnAllocatedEvent.setStatus(OutboxStatus.PENDING);
+            outboxEventRepository.save(msisdnAllocatedEvent);
+
+            log.info("[SUBSCRIPTION] Outbox event'leri (SubscriptionActivated, MSISDNAllocated) başarıyla yazıldı.");
+        } catch (Exception e) {
+            log.log(java.util.logging.Level.SEVERE, "[SUBSCRIPTION] Outbox event'leri yazılamadı", e);
+            throw new RuntimeException("Outbox event'leri yazılamadı", e);
+        }
 
         return toResponse(subscription);
     }
