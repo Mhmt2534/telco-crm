@@ -675,7 +675,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Ay sonu fatura kesim zamanı geldiğinde arka planda çalışan toplu fatura işinin podlar arasında çakışmadan güvenle çalıştırılması.
 
 
-* **Atanan Kişi:** Osman · Finans
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -705,7 +705,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Yeni bir abone katıldığında Billing sisteminde o aboneye ait fatura kesim döngüsünün başlatılması.
 
 
-* **Atanan Kişi:** Osman · Finans
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
@@ -732,7 +732,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Son ödeme tarihi geçen ödenmemiş faturaların tespiti.
 
 
-* **Atanan Kişi:** Osman · Finans
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Orta
@@ -758,7 +758,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * **Açıklama:** Müşteri faturasını ödediğinde sistemin faturayı kapatıp durumu duyurması.
 
 
-* **Atanan Kişi:** Osman · Finans
+* **Atanan Kişi:** Mahmut · Tech Lead
 
 
 * **Öncelik:** Yüksek
