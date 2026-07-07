@@ -6,18 +6,7 @@ spring:
     name: payment-service
   config:
     import: "optional:configserver:http://localhost:8888"
-  datasource:
-    url: jdbc:postgresql://localhost:5442/payment_db
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
   flyway:
     enabled: true
     baseline-on-migrate: true
-    url: jdbc:postgresql://localhost:5442/payment_db
-    user: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://${EUREKA_USERNAME:eureka}:${EUREKA_PASSWORD:eureka}@localhost:8761/eureka/
