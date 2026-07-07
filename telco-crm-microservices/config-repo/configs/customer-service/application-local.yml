@@ -1,15 +1,15 @@
 spring:
   datasource:
-    url: jdbc:postgresql://customer-db:5432/customer_db
+    url: jdbc:postgresql://localhost:5434/customer_db
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
   flyway:
-    url: jdbc:postgresql://customer-db:5432/customer_db
+    url: jdbc:postgresql://localhost:5434/customer_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
 
 keycloak:
-  server-url: http://keycloak:8080
+  server-url: http://localhost:9011
   realm: telco-crm-realm
   client-id: telco-crm-client
   client-secret: B3Zlh6fORItPVGdybGkILIkH9S3hQgex

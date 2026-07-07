@@ -519,8 +519,8 @@ services:
       - "${CONFIG_PORT:-8888}:8888"
     environment:
       # Folder-based config-repo: service-specific + global paths
-      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_0: file:/config-repo/configs/{application}
-      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_1: file:/config-repo/configs
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_0: file:/config-repo/configs
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS_1: file:/config-repo/configs/{application}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-changeme-set-via-setx}
       # Size the JVM heap to the container memory limit (local-dev footprint).
@@ -620,13 +620,8 @@ services:
     container_name: identity-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://identity-db:5432/identity_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://identity-db:5432/identity_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -665,14 +660,8 @@ services:
     container_name: customer-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://customer-db:5432/customer_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://customer-db:5432/customer_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
-      KEYCLOAK_SERVER_URL: http://keycloak:8080
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -711,13 +700,8 @@ services:
     container_name: product-catalog-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/product_catalog_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://product-db:5432/product_catalog_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -756,13 +740,8 @@ services:
     container_name: order-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://order-db:5432/order_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -801,13 +780,8 @@ services:
     container_name: subscription-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://subscription-db:5432/subscription_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://subscription-db:5432/subscription_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -846,13 +820,8 @@ services:
     container_name: billing-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://billing-db:5432/billing_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://billing-db:5432/billing_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -891,13 +860,8 @@ services:
     container_name: usage-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://usage-db:5432/usage_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://usage-db:5432/usage_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -936,13 +900,8 @@ services:
     container_name: notification-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://notification-db:5432/notification_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -981,13 +940,8 @@ services:
     container_name: ticket-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-db:5432/ticket_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://ticket-db:5432/ticket_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -1026,13 +980,8 @@ services:
     container_name: payment-service
     profiles: [ "apps" ]
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
-      SPRING_FLYWAY_URL: jdbc:postgresql://payment-db:5432/payment_db
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -1115,10 +1064,6 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_DATA_REDIS_HOST: redis
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://${EUREKA_USERNAME:-eureka}:${EUREKA_PASSWORD:-eureka}@discovery-server:8761/eureka/
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:

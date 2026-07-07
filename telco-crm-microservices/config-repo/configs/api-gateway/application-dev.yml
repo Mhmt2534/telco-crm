@@ -2,3 +2,15 @@ logging:
   level:
     root: INFO
     org.springframework.cloud.gateway: DEBUG
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://keycloak:8080/realms/telco-crm-realm/protocol/openid-connect/certs
+          issuer-uri: http://keycloak:8080/realms/telco-crm-realm
+  data:
+    redis:
+      host: redis
+      port: 6379
