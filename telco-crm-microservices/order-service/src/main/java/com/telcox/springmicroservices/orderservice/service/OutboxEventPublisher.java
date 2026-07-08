@@ -65,6 +65,16 @@ public class OutboxEventPublisher {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("orderId", order.getId());
             payload.put("newStatus", "PAID");
+            payload.put("customerId", order.getCustomerId());
+            
+            String tariffCode = null;
+            if (order.getItems() != null && !order.getItems().isEmpty()) {
+                tariffCode = order.getItems().iterator().next().getProductCode();
+            }
+            if (tariffCode != null) {
+                payload.put("tariffCode", tariffCode);
+            }
+            
             payload.put("occurredAt", Instant.now().toString());
 
             OutboxEvent event = OutboxEvent.builder()
@@ -78,6 +88,30 @@ public class OutboxEventPublisher {
             log.info("OrderConfirmed event published to outbox for order ID: {}", order.getId());
         } catch (Exception e) {
             log.error("Failed to serialize OrderConfirmed event payload", e);
+            throw new RuntimeException("Error processing JSON for outbox event", e);
+        }
+    }
+
+    @Transactional
+    public void publishPaymentRefundRequested(Long orderId, String paymentId, java.math.BigDecimal amount) {
+        try {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("orderId", orderId);
+            payload.put("paymentId", paymentId);
+            payload.put("amount", amount);
+            payload.put("occurredAt", Instant.now().toString());
+
+            OutboxEvent event = OutboxEvent.builder()
+                    .aggregateType("Order")
+                    .aggregateId(orderId.toString())
+                    .eventType("PaymentRefundRequested")
+                    .payload(objectMapper.valueToTree(payload))
+                    .build();
+
+            outboxEventRepository.save(event);
+            log.info("PaymentRefundRequested event published to outbox for order ID: {}", orderId);
+        } catch (Exception e) {
+            log.error("Failed to serialize PaymentRefundRequested event payload", e);
             throw new RuntimeException("Error processing JSON for outbox event", e);
         }
     }

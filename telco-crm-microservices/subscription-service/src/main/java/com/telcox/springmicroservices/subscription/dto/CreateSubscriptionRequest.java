@@ -11,10 +11,9 @@ import jakarta.validation.constraints.NotNull;
  */
 public record CreateSubscriptionRequest(
 
-        @NotNull(message = "Müşteri ID boş olamaz")
-        Long customerId,
+                @NotNull(message = "Müşteri ID boş olamaz") Long customerId,
 
-        @NotBlank(message = "Tarife kodu boş olamaz")
-        String tariffCode
+                @NotBlank(message = "Tarife kodu boş olamaz") String tariffCode,
 
-) {}
+                Long orderId) {
+}

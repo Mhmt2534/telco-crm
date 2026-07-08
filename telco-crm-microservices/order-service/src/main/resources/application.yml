@@ -35,5 +35,5 @@ management:
 app:
   kafka:
     topics:
-      payment-completed: "telcox.payment.payment.PaymentCompleted"
-      subscription-activated: "telcox.subscription.subscription.SubscriptionActivated"
+      payment-events: "telcox.Payment.events"
+      subscription-events: "telcox.Subscription.events"
