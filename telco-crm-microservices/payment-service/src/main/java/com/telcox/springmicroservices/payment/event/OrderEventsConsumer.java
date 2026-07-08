@@ -74,8 +74,8 @@ public class OrderEventsConsumer {
             } catch (Exception e) {
                 log.error("Failed to parse PaymentRefundRequestedEvent", e);
             }
-        } else {
-            // Default to OrderCreated logic
+        } else if ("OrderCreated".equals(eventType)) {
+            // OrderCreated logic
             try {
                 OrderCreatedEvent event = objectMapper.readValue(jsonPayload, OrderCreatedEvent.class);
                 if (event.getOrderId() != null && event.getCustomerId() != null) {
@@ -105,6 +105,8 @@ public class OrderEventsConsumer {
             } catch (Exception ex) {
                 log.error("All parsing attempts failed for Kafka message: {}", message, ex);
             }
+        } else {
+            log.info("Ignoring event type outside payment-service's interest (eventType={}), raw payload: {}", eventType, jsonPayload);
         }
     }
 }

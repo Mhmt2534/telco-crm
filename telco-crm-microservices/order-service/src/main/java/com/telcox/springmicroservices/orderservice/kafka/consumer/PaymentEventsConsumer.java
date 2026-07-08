@@ -9,6 +9,7 @@ import com.telcox.springmicroservices.orderservice.domain.entity.SagaState;
 import com.telcox.springmicroservices.orderservice.domain.enums.OrderStatus;
 import com.telcox.springmicroservices.orderservice.domain.enums.SagaStatus;
 import com.telcox.springmicroservices.orderservice.dto.PaymentCompletedPayload;
+import com.telcox.springmicroservices.orderservice.dto.PaymentFailedPayload;
 import com.telcox.springmicroservices.orderservice.dto.PaymentRefundedPayload;
 import com.telcox.springmicroservices.orderservice.repository.OrderRepository;
 import com.telcox.springmicroservices.orderservice.repository.SagaStateRepository;
@@ -65,12 +66,10 @@ public class PaymentEventsConsumer {
 
             // Heuristics if still null
             if (eventType == null) {
-                if (afterNode.has("paymentId") && afterNode.has("orderId")) {
-                    // Check if it's refunded or completed. 
-                    // PaymentRefunded Payload and PaymentCompleted Payload both have paymentId and orderId now.
-                    // But PaymentCompleted doesn't have amount in the order-service side, though it has it on payment-service side.
-                    // To be safe, rely on the Debezium outbox table routing which usually includes event_type in headers.
-                    log.warn("Could not determine eventType from header or payload root, attempting heuristic routing.");
+                if (afterNode.has("errorCode") || afterNode.has("error")) {
+                    eventType = "PaymentFailed";
+                } else if (afterNode.has("paymentId") && afterNode.has("orderId")) {
+                    eventType = "PaymentCompleted";
                 }
             }
 
@@ -78,11 +77,12 @@ public class PaymentEventsConsumer {
 
             if ("PaymentRefunded".equals(eventType)) {
                 handlePaymentRefunded(targetPayloadStr);
-            } else if ("PaymentCompleted".equals(eventType) || eventType == null) {
-                // If eventType is null, default to PaymentCompleted for backward compatibility
+            } else if ("PaymentCompleted".equals(eventType)) {
                 handlePaymentCompleted(targetPayloadStr);
+            } else if ("PaymentFailed".equals(eventType)) {
+                handlePaymentFailed(targetPayloadStr);
             } else {
-                log.warn("Ignored unknown eventType: {}", eventType);
+                log.warn("Could not determine event type for message, skipping: {}", message);
             }
 
         } catch (Exception e) {
@@ -190,6 +190,55 @@ public class PaymentEventsConsumer {
 
         } catch (JsonProcessingException e) {
             log.error("Failed to parse PaymentRefunded message", e);
+        }
+    }
+
+    private void handlePaymentFailed(String payloadStr) {
+        try {
+            PaymentFailedPayload payload = objectMapper.readValue(payloadStr, PaymentFailedPayload.class);
+            Long orderId = payload.getOrderId();
+
+            if (orderId == null) {
+                log.warn("Ignored PaymentFailed message: orderId is null");
+                return;
+            }
+
+            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            if (orderOpt.isEmpty()) {
+                log.warn("Ignored PaymentFailed message: Order not found with ID {}", orderId);
+                return;
+            }
+
+            Order order = orderOpt.get();
+
+            // Idempotency check: Ignore if status is already CANCELLED
+            if (order.getStatus() == OrderStatus.CANCELLED) {
+                log.info("Ignored PaymentFailed message for order ID {}: Order status is already CANCELLED", orderId);
+                return;
+            }
+
+            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(orderId);
+            if (sagaOpt.isPresent()) {
+                SagaState sagaState = sagaOpt.get();
+                
+                // Idempotency
+                if ("FAILED".equals(sagaState.getCurrentStep()) || "COMPENSATED".equals(sagaState.getCurrentStep())) {
+                    log.info("Ignored PaymentFailed message for order ID {}: Saga is already {}", orderId, sagaState.getCurrentStep());
+                    return;
+                }
+                
+                sagaState.setCurrentStep("FAILED");
+                sagaState.setStatus(SagaStatus.FAILED);
+                sagaStateRepository.save(sagaState);
+            }
+
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+
+            log.info("Processed PaymentFailed message for order ID {}: status updated to CANCELLED, Saga FAILED", orderId);
+
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse PaymentFailed message", e);
         }
     }
 }

@@ -65,6 +65,16 @@ public class OutboxEventPublisher {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("orderId", order.getId());
             payload.put("newStatus", "PAID");
+            payload.put("customerId", order.getCustomerId());
+            
+            String tariffCode = null;
+            if (order.getItems() != null && !order.getItems().isEmpty()) {
+                tariffCode = order.getItems().iterator().next().getProductCode();
+            }
+            if (tariffCode != null) {
+                payload.put("tariffCode", tariffCode);
+            }
+            
             payload.put("occurredAt", Instant.now().toString());
 
             OutboxEvent event = OutboxEvent.builder()

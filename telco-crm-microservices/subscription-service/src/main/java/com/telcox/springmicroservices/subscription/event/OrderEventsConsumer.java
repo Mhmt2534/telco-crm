@@ -24,8 +24,10 @@ public class OrderEventsConsumer {
     }
 
     @KafkaListener(topics = "telcox.Order.events", groupId = "subscription-service-group")
-    public void consume(String message, @org.springframework.messaging.handler.annotation.Header(name = "eventType", required = false) String eventTypeHeader) {
-        log.info("Received raw event message from telcox.Order.events: {} | Header eventType: {}", message, eventTypeHeader);
+    public void consume(String message,
+            @org.springframework.messaging.handler.annotation.Header(name = "eventType", required = false) String eventTypeHeader) {
+        log.info("Received raw event message from telcox.Order.events: {} | Header eventType: {}", message,
+                eventTypeHeader);
         String jsonPayload = message;
 
         try {
@@ -43,8 +45,9 @@ public class OrderEventsConsumer {
             JsonNode afterNode = payloadNode.has("after") ? payloadNode.get("after") : payloadNode;
 
             String eventType = eventTypeHeader != null ? eventTypeHeader : "";
-            
-            // Fallback: Debezium outbox router payload'u sadeleştirdiğinde header yoksa payload içeriğinden çıkarım yap
+
+            // Fallback: Debezium outbox router payload'u sadeleştirdiğinde header yoksa
+            // payload içeriğinden çıkarım yap
             if (eventType.isEmpty()) {
                 if (afterNode.has("tariffCode")) {
                     eventType = "OrderConfirmed";
@@ -55,8 +58,13 @@ public class OrderEventsConsumer {
                 }
             }
 
-            if (!"OrderConfirmed".equals(eventType)) {
-                log.debug("Skipping event type: {}", eventType);
+            if ("OrderConfirmed".equals(eventType)) {
+                // Process OrderConfirmed below
+            } else if (eventType.isEmpty()) {
+                log.warn("Could not determine event type for message, skipping: {}", message);
+                return;
+            } else {
+                log.info("Ignoring event type outside subscription-service's interest (eventType={}), raw payload: {}", eventType, jsonPayload);
                 return;
             }
 
@@ -76,10 +84,18 @@ public class OrderEventsConsumer {
                 return;
             }
 
-            CreateSubscriptionRequest request = new CreateSubscriptionRequest(event.getCustomerId(), event.getTariffCode());
-            subscriptionService.createSubscription(request);
-
-            log.info("Successfully created subscription for OrderConfirmed event.");
+            CreateSubscriptionRequest request = new CreateSubscriptionRequest(
+                    event.getCustomerId(),
+                    event.getTariffCode(),
+                    event.getOrderId());
+            
+            try {
+                subscriptionService.createSubscription(request);
+                log.info("Successfully created subscription for OrderConfirmed event.");
+            } catch (Exception createEx) {
+                log.error("Failed to create subscription for OrderId: {}. Publishing ActivationFailed event.", request.orderId(), createEx);
+                subscriptionService.publishActivationFailedEvent(request.orderId(), createEx.getMessage());
+            }
 
         } catch (Exception ex) {
             log.error("Failed to process OrderConfirmed Kafka message: {}", message, ex);

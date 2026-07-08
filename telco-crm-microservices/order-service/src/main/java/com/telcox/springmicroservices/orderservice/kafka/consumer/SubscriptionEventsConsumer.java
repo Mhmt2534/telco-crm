@@ -12,6 +12,7 @@ import com.telcox.springmicroservices.orderservice.dto.SubscriptionActivationFai
 import com.telcox.springmicroservices.orderservice.repository.OrderRepository;
 import com.telcox.springmicroservices.orderservice.repository.SagaStateRepository;
 import com.telcox.springmicroservices.orderservice.service.OutboxEventPublisher;
+import com.telcox.springmicroservices.orderservice.service.SagaOrchestrator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +31,10 @@ public class SubscriptionEventsConsumer {
     private final OrderRepository orderRepository;
     private final SagaStateRepository sagaStateRepository;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final SagaOrchestrator sagaOrchestrator;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "${app.kafka.topics.subscription-events}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "telcox.Subscription.events", groupId = "${spring.kafka.consumer.group-id}")
     @Transactional
     public void consume(String message, @Header(name = "eventType", required = false) String headerEventType) {
         log.info("Received raw event message from subscription-events: {}, eventType header: {}", message, headerEventType);
@@ -75,10 +77,10 @@ public class SubscriptionEventsConsumer {
 
             if ("SubscriptionActivationFailed".equals(eventType)) {
                 handleSubscriptionActivationFailed(targetPayloadStr);
-            } else if ("SubscriptionActivated".equals(eventType) || eventType == null) {
+            } else if ("SubscriptionActivated".equals(eventType)) {
                 handleSubscriptionActivated(targetPayloadStr);
             } else {
-                log.warn("Ignored unknown eventType: {}", eventType);
+                log.warn("Could not determine event type for message, skipping: {}", message);
             }
 
         } catch (Exception e) {
@@ -110,17 +112,7 @@ public class SubscriptionEventsConsumer {
                 return;
             }
 
-            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(orderId);
-            if (sagaOpt.isPresent()) {
-                SagaState sagaState = sagaOpt.get();
-                sagaState.setCurrentStep("STEP_3");
-                sagaState.setStatus(SagaStatus.COMPLETED);
-                sagaStateRepository.save(sagaState);
-            }
-
-            order.setStatus(OrderStatus.FULFILLED);
-            orderRepository.save(order);
-
+            sagaOrchestrator.handleSubscriptionActivated(orderId);
             log.info("Processed SubscriptionActivated message for order ID {}: status updated to FULFILLED, Saga COMPLETED", orderId);
 
         } catch (JsonProcessingException e) {
