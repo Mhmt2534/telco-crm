@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PaymentCompletedPayload {
+public class PaymentRefundedPayload {
     private UUID paymentId;
     private Long orderId;
 }

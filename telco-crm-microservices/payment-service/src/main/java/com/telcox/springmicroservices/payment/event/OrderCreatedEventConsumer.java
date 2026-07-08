@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import com.telcox.springmicroservices.payment.dto.PaymentRefundRequestedEvent;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+
 @Component
 public class OrderCreatedEventConsumer {
 
@@ -23,8 +27,8 @@ public class OrderCreatedEventConsumer {
     }
 
     @KafkaListener(topics = "telcox.Order.events", groupId = "payment-service-group")
-    public void consume(String message) {
-        log.info("Received raw event message from telcox.Order.events: {}", message);
+    public void consume(String message, @Header(name = "eventType", required = false) String headerEventType) {
+        log.info("Received raw event message from telcox.Order.events: {}, eventType header: {}", message, headerEventType);
         
         String jsonPayload = message;
 
@@ -39,37 +43,68 @@ public class OrderCreatedEventConsumer {
             log.debug("Message is not a JSON TextNode, treating as raw JSON.");
         }
 
-        // 2. First attempt: Parse directly as OrderCreatedEvent DTO
-        try {
-            OrderCreatedEvent event = objectMapper.readValue(jsonPayload, OrderCreatedEvent.class);
-            if (event.getOrderId() != null) {
-                paymentService.processPayment(event);
-                return;
-            }
-        } catch (Exception e) {
-            log.warn("Direct DTO parsing failed, trying Debezium schema envelope parsing fallback...");
-        }
-
-        // 3. Fallback: Parse Debezium envelope structured payload
+        // Try to extract event type from payload if header is missing
+        String eventType = headerEventType;
         try {
             JsonNode root = objectMapper.readTree(jsonPayload);
-            
-            // Navigate through potential Debezium JSON envelope structures
-            JsonNode payloadNode = root.has("payload") ? root.get("payload") : root;
-            JsonNode afterNode = payloadNode.has("after") ? payloadNode.get("after") : payloadNode;
-            
-            if (afterNode.has("payload")) {
-                JsonNode innerPayload = afterNode.get("payload");
-                String payloadStr = innerPayload.isTextual() ? innerPayload.asText() : innerPayload.toString();
-                
-                OrderCreatedEvent event = objectMapper.readValue(payloadStr, OrderCreatedEvent.class);
-                paymentService.processPayment(event);
-                log.info("Successfully parsed event via Debezium fallback router path.");
-            } else {
-                log.error("Could not locate payload field in unescaped message: {}", jsonPayload);
+            if (eventType == null && root.has("eventType")) {
+                eventType = root.get("eventType").asText();
             }
-        } catch (Exception ex) {
-            log.error("All parsing attempts failed for Kafka message: {}", message, ex);
+            // Add a heuristic based on fields if eventType is still null
+            if (eventType == null) {
+                if (root.has("paymentId") && root.has("amount") && !root.has("customerId")) {
+                    eventType = "PaymentRefundRequested";
+                } else if (root.has("customerId") && root.has("totalAmount")) {
+                    eventType = "OrderCreated";
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not parse eventType from payload");
+        }
+
+        log.info("Determined eventType: {}", eventType);
+
+        if ("PaymentRefundRequested".equals(eventType)) {
+            try {
+                PaymentRefundRequestedEvent event = objectMapper.readValue(jsonPayload, PaymentRefundRequestedEvent.class);
+                if (event.getPaymentId() != null) {
+                    paymentService.refundPayment(event);
+                    return;
+                }
+            } catch (Exception e) {
+                log.error("Failed to parse PaymentRefundRequestedEvent", e);
+            }
+        } else {
+            // Default to OrderCreated logic
+            try {
+                OrderCreatedEvent event = objectMapper.readValue(jsonPayload, OrderCreatedEvent.class);
+                if (event.getOrderId() != null && event.getCustomerId() != null) {
+                    paymentService.processPayment(event);
+                    return;
+                }
+            } catch (Exception e) {
+                log.warn("Direct DTO parsing failed for OrderCreatedEvent, trying Debezium schema envelope parsing fallback...");
+            }
+
+            // Fallback: Parse Debezium envelope structured payload
+            try {
+                JsonNode root = objectMapper.readTree(jsonPayload);
+                JsonNode payloadNode = root.has("payload") ? root.get("payload") : root;
+                JsonNode afterNode = payloadNode.has("after") ? payloadNode.get("after") : payloadNode;
+                
+                if (afterNode.has("payload")) {
+                    JsonNode innerPayload = afterNode.get("payload");
+                    String payloadStr = innerPayload.isTextual() ? innerPayload.asText() : innerPayload.toString();
+                    
+                    OrderCreatedEvent event = objectMapper.readValue(payloadStr, OrderCreatedEvent.class);
+                    paymentService.processPayment(event);
+                    log.info("Successfully parsed event via Debezium fallback router path.");
+                } else {
+                    log.error("Could not locate payload field in unescaped message: {}", jsonPayload);
+                }
+            } catch (Exception ex) {
+                log.error("All parsing attempts failed for Kafka message: {}", message, ex);
+            }
         }
     }
 }

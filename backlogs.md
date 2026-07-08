@@ -164,7 +164,7 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 * [ ] Onaylama anında veritabanındaki `outbox_event` tablosuna `CustomerKYCApprovedEvent` kaydı (JSON payload'a artık `keycloakUserId` de dahil edilerek) eklenmeli.
 
 
-* [ ] Uygulama kodunda kesinlikle Kafka Producer kodu yazılmamalı; `Debezium CDC` PostgreSQL connector'ü WAL üzerinden bu kaydı okuyup `telcox.customer.customer.CustomerKYCApproved` topic'ine otomatik basmalı (orijinal davranış korunur).
+* [ ] Uygulama kodunda kesinlikle Kafka Producer kodu yazılmamalı; `Debezium CDC` PostgreSQL connector'ü (EventRouter SMT) WAL üzerinden bu kaydı okuyup `telcox.Customer.events` topic'ine otomatik basmalı, mesajın içindeki `eventType`/payload alanına bakılarak `CustomerKYCApproved` olduğu ayırt edilmeli (orijinal davranış korunur — bu topic ismi, gerçek `customer-outbox-connector` konfigürasyonuyla ve mevcut Kafka topic listesiyle (`telcox.Customer.events`) doğrulanmıştır).
 
 
 * [ ] Klasik Gateway Yönetimi İzolasyonu: Docker Compose dosyasında `api-gateway` (8080) haricindeki tüm iç servis portları host makineye expose edilmemeli (orijinal davranış korunur).
@@ -516,6 +516,16 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 * **Kullanılacak Teknolojiler:** OpenTelemetry Java Agent, Micrometer, Zipkin, Prometheus, Grafana, Loki
+
+
+> **Not — Kafka Topic İsimlendirme Konvansiyonu:** Bu projede Debezium Outbox EventRouter 
+> kullanılıyor. Her servis kendi aggregate'i için TEK bir topic'e yazar: 
+> `telcox.<AggregateType>.events` (örn. `telcox.Customer.events`, `telcox.Payment.events`, 
+> `telcox.Subscription.events`, `telcox.Order.events`). Belirli bir event tipi (örn. 
+> `PaymentCompleted` vs `PaymentRefunded`) bu tek topic içindeki mesajın `eventType` alanına 
+> (veya Debezium header'ına) bakılarak ayırt edilir. Kartlarda "X eventi Y topic'ine basılmalı" 
+> denildiğinde, kastedilen her zaman ilgili aggregate'in tek topic'i + eventType filtrelemesidir; 
+> yeni, ayrı bir topic AÇILMAZ.
 
 
 

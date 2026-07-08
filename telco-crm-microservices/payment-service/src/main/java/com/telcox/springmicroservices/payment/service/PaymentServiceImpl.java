@@ -140,4 +140,58 @@ public class PaymentServiceImpl implements PaymentService {
         outboxRepository.save(outboxEvent);
         log.info("Saved outbox event {} for Order ID: {}", eventType, event.getOrderId());
     }
+
+    @Override
+    @Transactional
+    public void refundPayment(com.telcox.springmicroservices.payment.dto.PaymentRefundRequestedEvent event) {
+        log.info("Processing refund for Payment ID: {}, Order ID: {}", event.getPaymentId(), event.getOrderId());
+
+        Optional<Payment> existingPaymentOpt = paymentRepository.findById(event.getPaymentId());
+        if (existingPaymentOpt.isEmpty()) {
+            log.error("Payment not found for Payment ID: {}", event.getPaymentId());
+            return;
+        }
+
+        Payment payment = existingPaymentOpt.get();
+
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            log.info("Payment already refunded for Payment ID: {}. Skipping.", event.getPaymentId());
+            return;
+        }
+
+        if (payment.getStatus() != PaymentStatus.SUCCESS) {
+            log.warn("Cannot refund payment that is not in SUCCESS state. Payment ID: {}, Status: {}", event.getPaymentId(), payment.getStatus());
+            return;
+        }
+
+        payment.setStatus(PaymentStatus.REFUNDED);
+        paymentRepository.save(payment);
+
+        com.telcox.springmicroservices.payment.dto.PaymentRefundedEvent refundedEvent = new com.telcox.springmicroservices.payment.dto.PaymentRefundedEvent(
+                payment.getId(),
+                payment.getOrderId(),
+                event.getAmount(),
+                Instant.now()
+        );
+
+        String eventPayloadJson;
+        try {
+            eventPayloadJson = objectMapper.writeValueAsString(refundedEvent);
+        } catch (Exception e) {
+            log.error("Failed to serialize PaymentRefundedEvent", e);
+            throw new RuntimeException("Serialization failure", e);
+        }
+
+        OutboxEvent outboxEvent = new OutboxEvent(
+                UUID.randomUUID(),           // id
+                UUID.randomUUID(),           // event_id
+                "Payment",                   // aggregate_type
+                payment.getId().toString(),  // aggregate_id
+                "PaymentRefunded",           // event_type
+                eventPayloadJson             // payload
+        );
+
+        outboxRepository.save(outboxEvent);
+        log.info("Saved outbox event PaymentRefunded for Payment ID: {}", payment.getId());
+    }
 }
