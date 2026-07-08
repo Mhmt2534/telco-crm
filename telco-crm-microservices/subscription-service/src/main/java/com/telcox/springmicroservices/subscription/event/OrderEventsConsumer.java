@@ -11,14 +11,14 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 @Component
-public class OrderConfirmedEventConsumer {
+public class OrderEventsConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderConfirmedEventConsumer.class);
+    private static final Logger log = LoggerFactory.getLogger(OrderEventsConsumer.class);
 
     private final SubscriptionService subscriptionService;
     private final ObjectMapper objectMapper;
 
-    public OrderConfirmedEventConsumer(SubscriptionService subscriptionService, ObjectMapper objectMapper) {
+    public OrderEventsConsumer(SubscriptionService subscriptionService, ObjectMapper objectMapper) {
         this.subscriptionService = subscriptionService;
         this.objectMapper = objectMapper;
     }

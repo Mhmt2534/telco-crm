@@ -14,14 +14,14 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 
 @Component
-public class OrderCreatedEventConsumer {
+public class OrderEventsConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderCreatedEventConsumer.class);
+    private static final Logger log = LoggerFactory.getLogger(OrderEventsConsumer.class);
 
     private final PaymentService paymentService;
     private final ObjectMapper objectMapper;
 
-    public OrderCreatedEventConsumer(PaymentService paymentService, ObjectMapper objectMapper) {
+    public OrderEventsConsumer(PaymentService paymentService, ObjectMapper objectMapper) {
         this.paymentService = paymentService;
         this.objectMapper = objectMapper;
     }
