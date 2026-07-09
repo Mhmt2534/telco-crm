@@ -7,3 +7,27 @@ spring:
     url: jdbc:postgresql://localhost:5436/order_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      customer-service:
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 10
+      product-catalog-service:
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 10
+  retry:
+    instances:
+      customer-service:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+      product-catalog-service:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
