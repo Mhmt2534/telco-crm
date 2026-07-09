@@ -99,14 +99,75 @@ public class Quota extends BaseEntity {
     public Long getMbRemaining()                           { return mbRemaining; }
     public void setMbRemaining(Long v)                     { this.mbRemaining = v; }
 
+    // ── Eşik ve Aşım Durumları ───────────────────────────────
+    @Column(name = "voice_threshold_reached", nullable = false)
+    private boolean voiceThresholdReached = false;
+
+    @Column(name = "sms_threshold_reached", nullable = false)
+    private boolean smsThresholdReached = false;
+
+    @Column(name = "data_threshold_reached", nullable = false)
+    private boolean dataThresholdReached = false;
+
+    @Column(name = "voice_exceeded", nullable = false)
+    private boolean voiceExceeded = false;
+
+    @Column(name = "sms_exceeded", nullable = false)
+    private boolean smsExceeded = false;
+
+    @Column(name = "data_exceeded", nullable = false)
+    private boolean dataExceeded = false;
+
+    public boolean isVoiceThresholdReached() { return voiceThresholdReached; }
+    public void setVoiceThresholdReached(boolean v) { this.voiceThresholdReached = v; }
+
+    public boolean isSmsThresholdReached() { return smsThresholdReached; }
+    public void setSmsThresholdReached(boolean v) { this.smsThresholdReached = v; }
+
+    public boolean isDataThresholdReached() { return dataThresholdReached; }
+    public void setDataThresholdReached(boolean v) { this.dataThresholdReached = v; }
+
+    public boolean isVoiceExceeded() { return voiceExceeded; }
+    public void setVoiceExceeded(boolean v) { this.voiceExceeded = v; }
+
+    public boolean isSmsExceeded() { return smsExceeded; }
+    public void setSmsExceeded(boolean v) { this.smsExceeded = v; }
+
+    public boolean isDataExceeded() { return dataExceeded; }
+    public void setDataExceeded(boolean v) { this.dataExceeded = v; }
+
     // ── Yardımcı: %80 / %100 eşik kontrolü ───────────────────
 
     /** MB kullanımının yüzde kaçının harcandığını döner (0-100). */
     public int mbUsagePercent() {
-        if (totalMb == 0) return 100;
+        if (totalMb == null || totalMb == 0) return 100;
         return (int) (((totalMb - mbRemaining) * 100L) / totalMb);
     }
 
-    public boolean isMbAt80Percent()  { return mbUsagePercent() >= 80; }
-    public boolean isMbAt100Percent() { return mbRemaining <= 0; }
+    public boolean isVoiceAt80Percent() {
+        if (totalMinutes == null || totalMinutes == 0) return true;
+        return (double) (totalMinutes - minutesRemaining) / totalMinutes >= 0.8;
+    }
+
+    public boolean isSmsAt80Percent() {
+        if (totalSms == null || totalSms == 0) return true;
+        return (double) (totalSms - smsRemaining) / totalSms >= 0.8;
+    }
+
+    public boolean isDataAt80Percent() {
+        if (totalMb == null || totalMb == 0) return true;
+        return (double) (totalMb - mbRemaining) / totalMb >= 0.8;
+    }
+
+    public boolean isVoiceAt100Percent() {
+        return minutesRemaining != null && minutesRemaining <= 0;
+    }
+
+    public boolean isSmsAt100Percent() {
+        return smsRemaining != null && smsRemaining <= 0;
+    }
+
+    public boolean isDataAt100Percent() {
+        return mbRemaining != null && mbRemaining <= 0;
+    }
 }
