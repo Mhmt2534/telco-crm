@@ -14,6 +14,9 @@ public class CustomerServiceFallbackFactory implements FallbackFactory<CustomerS
 
     @Override
     public CustomerServiceClient create(Throwable cause) {
+        if (cause instanceof io.github.resilience4j.circuitbreaker.CallNotPermittedException) {
+            throw (io.github.resilience4j.circuitbreaker.CallNotPermittedException) cause;
+        }
         if (cause instanceof com.telcox.common.core.exception.ResourceNotFoundException) {
             throw (com.telcox.common.core.exception.ResourceNotFoundException) cause;
         }

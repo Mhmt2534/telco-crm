@@ -97,6 +97,13 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred", null);
     }
 
+    @ExceptionHandler(io.github.resilience4j.circuitbreaker.CallNotPermittedException.class)
+    public ResponseEntity<ProblemDetails> handleCallNotPermitted(io.github.resilience4j.circuitbreaker.CallNotPermittedException ex) {
+        log.warn("Circuit breaker is OPEN [503]: {}", ex.getMessage());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.DEPENDENCY_UNAVAILABLE.code(), "service-unavailable",
+                "Service is currently unavailable due to circuit breaker state", null);
+    }
+
     private ProblemDetails.FieldViolation toViolation(FieldError fieldError) {
         return new ProblemDetails.FieldViolation(fieldError.getField(), fieldError.getDefaultMessage());
     }
