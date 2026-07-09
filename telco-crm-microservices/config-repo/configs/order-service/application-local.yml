@@ -7,3 +7,45 @@ spring:
     url: jdbc:postgresql://localhost:5436/order_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      customer-service:
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 10
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
+      product-catalog-service:
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 10
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
+  retry:
+    instances:
+      customer-service:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+      product-catalog-service:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+  timelimiter:
+    instances:
+      customer-service:
+        timeoutDuration: 3s
+      product-catalog-service:
+        timeoutDuration: 3s
