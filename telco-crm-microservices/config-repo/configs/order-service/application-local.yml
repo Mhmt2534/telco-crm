@@ -18,16 +18,24 @@ resilience4j:
       customer-service:
         failureRateThreshold: 50
         minimumNumberOfCalls: 10
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
       product-catalog-service:
         failureRateThreshold: 50
         minimumNumberOfCalls: 10
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
   retry:
     instances:
       customer-service:
         maxAttempts: 3
         waitDuration: 500ms
         enableExponentialBackoff: true
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
       product-catalog-service:
         maxAttempts: 3
         waitDuration: 500ms
         enableExponentialBackoff: true
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException

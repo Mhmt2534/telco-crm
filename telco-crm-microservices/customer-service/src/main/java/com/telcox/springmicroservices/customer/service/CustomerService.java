@@ -106,14 +106,14 @@ public class CustomerService {
     @Transactional(readOnly = true)
     public CustomerResponse getCustomerById(Long id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + id));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + id));
         return customerMapper.toResponse(customer);
     }
 
     @Transactional
     public CustomerResponse updateCustomer(Long id, com.telcox.springmicroservices.customer.dto.CustomerUpdateRequest request) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + id));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + id));
 
         if (request.getIdentityNumber() != null || request.getPhone() != null) {
             throw new com.telcox.common.core.exception.BusinessRuleException("TCKN ve telefon numarası güncellenemez");
@@ -139,7 +139,7 @@ public class CustomerService {
     @Transactional
     public void deleteCustomer(Long id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + id));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + id));
         customer.setDeleted(true);
         customerRepository.save(customer);
         outboxEventPublisher.publishCustomerUpdated(customer, "CUSTOMER_DELETED");
@@ -148,10 +148,10 @@ public class CustomerService {
     @Transactional(readOnly = true)
     public com.telcox.springmicroservices.customer.dto.InternalCustomerResponse getInternalCustomerByPhone(String phone) {
         Customer customer = customerRepository.findByPhone(phone)
-                .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + phone));
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + phone));
 
         if (customer.getStatus() != com.telcox.springmicroservices.customer.domain.enums.CustomerStatus.ACTIVE) {
-            throw new com.telcox.common.core.exception.ResourceNotFoundException("Aktif müşteri bulunamadı: " + phone);
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Aktif müşteri bulunamadı: " + phone);
         }
 
         return com.telcox.springmicroservices.customer.dto.InternalCustomerResponse.builder()
