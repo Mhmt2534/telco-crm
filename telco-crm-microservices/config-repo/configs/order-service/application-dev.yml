@@ -14,6 +14,8 @@ spring:
     openfeign:
       circuitbreaker:
         enabled: true
+        group:
+          enabled: true
 
 resilience4j:
   circuitbreaker:
@@ -42,3 +44,9 @@ resilience4j:
         enableExponentialBackoff: true
         ignoreExceptions:
           - com.telcox.common.core.exception.ResourceNotFoundException
+  timelimiter:
+    instances:
+      customer-service:
+        timeoutDuration: 3s
+      product-catalog-service:
+        timeoutDuration: 3s
