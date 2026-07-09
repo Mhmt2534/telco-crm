@@ -15,3 +15,9 @@ logging:
   level:
     root: INFO
     com.telcox: DEBUG
+
+app:
+  kafka:
+    topics:
+      payment-events: "telcox.Payment.events"
+

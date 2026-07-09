@@ -7,3 +7,9 @@ spring:
     url: jdbc:postgresql://localhost:5438/billing_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+
+app:
+  kafka:
+    topics:
+      payment-events: "telcox.Payment.events"
+
