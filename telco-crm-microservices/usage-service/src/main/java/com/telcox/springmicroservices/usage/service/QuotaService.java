@@ -5,14 +5,19 @@ import com.telcox.springmicroservices.usage.dto.QuotaResponse;
 import com.telcox.springmicroservices.usage.entity.Quota;
 import com.telcox.springmicroservices.usage.entity.UsageRecord;
 import com.telcox.springmicroservices.usage.entity.UsageType;
+import com.telcox.springmicroservices.usage.entity.OutboxEvent;
 import com.telcox.springmicroservices.usage.repository.QuotaRepository;
 import com.telcox.springmicroservices.usage.repository.UsageRecordRepository;
+import com.telcox.springmicroservices.usage.repository.OutboxEventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -22,10 +27,17 @@ public class QuotaService {
 
     private final QuotaRepository quotaRepository;
     private final UsageRecordRepository usageRecordRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
-    public QuotaService(QuotaRepository quotaRepository, UsageRecordRepository usageRecordRepository) {
+    public QuotaService(QuotaRepository quotaRepository,
+                        UsageRecordRepository usageRecordRepository,
+                        OutboxEventRepository outboxEventRepository,
+                        ObjectMapper objectMapper) {
         this.quotaRepository = quotaRepository;
         this.usageRecordRepository = usageRecordRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -84,6 +96,91 @@ public class QuotaService {
         usageRecordRepository.save(record);
 
         log.info("Processed CDR: {} amount of {} for MSISDN: {}", amount, type, event.getMsisdn());
+
+        // KART 20.5: Kota eşik ve aşım kontrolleri
+        checkAndPublishThresholds(quota, type, event.getMsisdn());
+    }
+
+    private void checkAndPublishThresholds(Quota quota, UsageType type, String msisdn) {
+        boolean thresholdReached = false;
+        boolean exceeded = false;
+
+        switch (type) {
+            case VOICE:
+                if (quota.isVoiceAt80Percent() && !quota.isVoiceThresholdReached()) {
+                    quota.setVoiceThresholdReached(true);
+                    thresholdReached = true;
+                }
+                if (quota.isVoiceAt100Percent() && !quota.isVoiceExceeded()) {
+                    quota.setVoiceExceeded(true);
+                    exceeded = true;
+                }
+                break;
+            case SMS:
+                if (quota.isSmsAt80Percent() && !quota.isSmsThresholdReached()) {
+                    quota.setSmsThresholdReached(true);
+                    thresholdReached = true;
+                }
+                if (quota.isSmsAt100Percent() && !quota.isSmsExceeded()) {
+                    quota.setSmsExceeded(true);
+                    exceeded = true;
+                }
+                break;
+            case DATA:
+                if (quota.isDataAt80Percent() && !quota.isDataThresholdReached()) {
+                    quota.setDataThresholdReached(true);
+                    thresholdReached = true;
+                }
+                if (quota.isDataAt100Percent() && !quota.isDataExceeded()) {
+                    quota.setDataExceeded(true);
+                    exceeded = true;
+                }
+                break;
+        }
+
+        if (thresholdReached || exceeded) {
+            quotaRepository.save(quota); // Durum bayraklarını güncelle
+        }
+
+        if (thresholdReached) {
+            Map<String, Object> payload = Map.of(
+                "subscriptionId", quota.getSubscriptionId(),
+                "msisdn", msisdn,
+                "usageType", type.name(),
+                "limitType", "80_PERCENT",
+                "thresholdReachedAt", Instant.now().toString()
+            );
+            saveOutboxEvent(quota.getSubscriptionId(), "QuotaThresholdReached", payload);
+            log.info("QuotaThresholdReached event written for subscription: {} type: {}", quota.getSubscriptionId(), type);
+        }
+
+        if (exceeded) {
+            Map<String, Object> payload = Map.of(
+                "subscriptionId", quota.getSubscriptionId(),
+                "msisdn", msisdn,
+                "usageType", type.name(),
+                "limitType", "100_PERCENT",
+                "exceededAt", Instant.now().toString()
+            );
+            saveOutboxEvent(quota.getSubscriptionId(), "QuotaExceeded", payload);
+            log.info("QuotaExceeded event written for subscription: {} type: {}", quota.getSubscriptionId(), type);
+        }
+    }
+
+    private void saveOutboxEvent(UUID subscriptionId, String eventType, Object payloadObj) {
+        try {
+            OutboxEvent outbox = new OutboxEvent();
+            outbox.setId(UUID.randomUUID());
+            outbox.setAggregateType("Quota");
+            outbox.setAggregateId(subscriptionId.toString());
+            outbox.setEventType(eventType);
+            outbox.setPayload(objectMapper.writeValueAsString(payloadObj));
+            outbox.setProcessed(false);
+            outbox.setCreatedAt(java.time.ZonedDateTime.now());
+            outboxEventRepository.save(outbox);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize outbox event payload", e);
+        }
     }
 
     // ── Mapper ────────────────────────────────────────────────
