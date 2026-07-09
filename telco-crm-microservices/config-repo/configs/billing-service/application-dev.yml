@@ -20,3 +20,8 @@ billing:
   overdue-check:
     cron: "0 0 1 * * ?"
 
+app:
+  kafka:
+    topics:
+      payment-events: "telcox.Payment.events"
+
