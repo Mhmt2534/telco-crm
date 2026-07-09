@@ -16,6 +16,6 @@ import io.github.resilience4j.retry.annotation.Retry;
 @Retry(name = "product-catalog-service")
 public interface ProductCatalogServiceClient {
 
-    @GetMapping("/api/products/batch")
+    @GetMapping("/api/v1/products/batch")
     List<ProductDto> getProductsByCodes(@RequestParam("codes") List<String> productCodes);
 }

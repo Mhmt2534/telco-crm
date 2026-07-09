@@ -75,14 +75,14 @@ public class OrderServiceResilienceTest {
 
     @Test
     void testProductCatalogServiceFallbackOnTimeout() {
-        stubFor(get(urlPathEqualTo("/api/products/batch"))
+        stubFor(get(urlPathEqualTo("/api/v1/products/batch"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withFixedDelay(2000))); // Simulate timeout (default feign timeout is usually 1 sec)
 
         // Wait, for feign timeout, we might need to configure it in properties for the test
         // Since it's not configured in the test properties, we can just return 500
-        stubFor(get(urlPathEqualTo("/api/products/batch"))
+        stubFor(get(urlPathEqualTo("/api/v1/products/batch"))
                 .willReturn(aResponse()
                         .withStatus(500)));
 
