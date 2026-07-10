@@ -7,14 +7,14 @@ import java.util.UUID;
 public class PaymentCompletedEvent {
     private UUID paymentId;
     private Long orderId;
-    private Long customerId;
+    private String customerId;
     private BigDecimal amount;
     private Instant occurredAt;
 
     public PaymentCompletedEvent() {
     }
 
-    public PaymentCompletedEvent(UUID paymentId, Long orderId, Long customerId, BigDecimal amount, Instant occurredAt) {
+    public PaymentCompletedEvent(UUID paymentId, Long orderId, String customerId, BigDecimal amount, Instant occurredAt) {
         this.paymentId = paymentId;
         this.orderId = orderId;
         this.customerId = customerId;
@@ -38,11 +38,11 @@ public class PaymentCompletedEvent {
         this.orderId = orderId;
     }
 
-    public Long getCustomerId() {
+    public String getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(String customerId) {
         this.customerId = customerId;
     }
 

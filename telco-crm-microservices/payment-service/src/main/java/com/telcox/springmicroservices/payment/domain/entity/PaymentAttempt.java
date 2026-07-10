@@ -14,8 +14,14 @@ public class PaymentAttempt extends BaseEntity {
     @Column(name = "attempt_no", nullable = false)
     private Integer attemptNo;
 
-    @Column(name = "response")
-    private String response;
+    @Column(name = "response_code", length = 50)
+    private String responseCode;
+
+    @Column(name = "response_message", columnDefinition = "TEXT")
+    private String responseMessage;
+
+    @Column(name = "attempted_at")
+    private java.time.OffsetDateTime attemptedAt;
 
     public PaymentAttempt() {
     }
@@ -36,11 +42,27 @@ public class PaymentAttempt extends BaseEntity {
         this.attemptNo = attemptNo;
     }
 
-    public String getResponse() {
-        return response;
+    public String getResponseCode() {
+        return responseCode;
     }
 
-    public void setResponse(String response) {
-        this.response = response;
+    public void setResponseCode(String responseCode) {
+        this.responseCode = responseCode;
+    }
+
+    public String getResponseMessage() {
+        return responseMessage;
+    }
+
+    public void setResponseMessage(String responseMessage) {
+        this.responseMessage = responseMessage;
+    }
+
+    public java.time.OffsetDateTime getAttemptedAt() {
+        return attemptedAt;
+    }
+
+    public void setAttemptedAt(java.time.OffsetDateTime attemptedAt) {
+        this.attemptedAt = attemptedAt;
     }
 }

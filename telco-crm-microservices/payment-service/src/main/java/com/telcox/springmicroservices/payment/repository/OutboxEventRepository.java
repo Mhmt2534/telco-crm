@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
+public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> {
 }

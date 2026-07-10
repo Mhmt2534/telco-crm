@@ -20,8 +20,14 @@ public class Payment extends BaseEntity {
     @Column(name = "order_id")
     private Long orderId;
 
+    @Column(name = "customer_id", length = 255)
+    private String customerId;
+
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
+
+    @Column(name = "currency", nullable = false, length = 10)
+    private String currency = "TRY";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "method", nullable = false, length = 50)
@@ -34,8 +40,8 @@ public class Payment extends BaseEntity {
     @Column(name = "external_ref", length = 100)
     private String externalRef;
 
-    @Column(name = "payment_request_id", unique = true, length = 100)
-    private String paymentRequestId;
+    @Column(name = "idempotency_key", unique = true, length = 100)
+    private String idempotencyKey;
 
     @Column(name = "paid_at")
     private OffsetDateTime paidAt;
@@ -62,12 +68,28 @@ public class Payment extends BaseEntity {
         this.orderId = orderId;
     }
 
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+
     public BigDecimal getAmount() {
         return amount;
     }
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 
     public PaymentMethod getMethod() {
@@ -94,12 +116,12 @@ public class Payment extends BaseEntity {
         this.externalRef = externalRef;
     }
 
-    public String getPaymentRequestId() {
-        return paymentRequestId;
+    public String getIdempotencyKey() {
+        return idempotencyKey;
     }
 
-    public void setPaymentRequestId(String paymentRequestId) {
-        this.paymentRequestId = paymentRequestId;
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public OffsetDateTime getPaidAt() {

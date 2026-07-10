@@ -1,15 +1,31 @@
 package com.telcox.springmicroservices.payment.domain.entity;
 
-import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import com.telcox.common.persistence.outbox.OutboxStatus;
+
 @Entity
 @Table(name = "outbox_event")
+@Getter
+@Setter
+@NoArgsConstructor
 public class OutboxEvent {
 
     @Id
-    @Column(nullable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "event_id", nullable = false, unique = true)
@@ -27,8 +43,9 @@ public class OutboxEvent {
     @Column(name = "payload", nullable = false, columnDefinition = "text")
     private String payload;
 
-    @Column(name = "status", nullable = false, length = 20)
-    private String status = "PENDING";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private OutboxStatus status = OutboxStatus.PENDING;
 
     @Column(name = "retry_count", nullable = false)
     private int retryCount = 0;
@@ -39,95 +56,52 @@ public class OutboxEvent {
     @Column(name = "published_at")
     private OffsetDateTime publishedAt;
 
-    public OutboxEvent() {
+    private OutboxEvent(Builder builder) {
+        this.eventId = builder.eventId;
+        this.aggregateType = builder.aggregateType;
+        this.aggregateId = builder.aggregateId;
+        this.eventType = builder.eventType;
+        this.payload = builder.payload;
     }
 
-    public OutboxEvent(UUID id, UUID eventId, String aggregateType, String aggregateId, String eventType, String payload) {
-        this.id = id;
-        this.eventId = eventId;
-        this.aggregateType = aggregateType;
-        this.aggregateId = aggregateId;
-        this.eventType = eventType;
-        this.payload = payload;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public UUID getId() {
-        return id;
-    }
+    public static final class Builder {
+        private UUID eventId;
+        private String aggregateType;
+        private String aggregateId;
+        private String eventType;
+        private String payload;
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+        public Builder eventId(UUID eventId) {
+            this.eventId = eventId;
+            return this;
+        }
 
-    public UUID getEventId() {
-        return eventId;
-    }
+        public Builder aggregateType(String aggregateType) {
+            this.aggregateType = aggregateType;
+            return this;
+        }
 
-    public void setEventId(UUID eventId) {
-        this.eventId = eventId;
-    }
+        public Builder aggregateId(String aggregateId) {
+            this.aggregateId = aggregateId;
+            return this;
+        }
 
-    public String getAggregateType() {
-        return aggregateType;
-    }
+        public Builder eventType(String eventType) {
+            this.eventType = eventType;
+            return this;
+        }
 
-    public void setAggregateType(String aggregateType) {
-        this.aggregateType = aggregateType;
-    }
+        public Builder payload(String payload) {
+            this.payload = payload;
+            return this;
+        }
 
-    public String getAggregateId() {
-        return aggregateId;
-    }
-
-    public void setAggregateId(String aggregateId) {
-        this.aggregateId = aggregateId;
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
-    }
-
-    public String getPayload() {
-        return payload;
-    }
-
-    public void setPayload(String payload) {
-        this.payload = payload;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public int getRetryCount() {
-        return retryCount;
-    }
-
-    public void setRetryCount(int retryCount) {
-        this.retryCount = retryCount;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getPublishedAt() {
-        return publishedAt;
-    }
-
-    public void setPublishedAt(OffsetDateTime publishedAt) {
-        this.publishedAt = publishedAt;
+        public OutboxEvent build() {
+            return new OutboxEvent(this);
+        }
     }
 }

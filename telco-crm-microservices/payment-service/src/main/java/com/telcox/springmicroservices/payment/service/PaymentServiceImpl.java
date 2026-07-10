@@ -6,10 +6,8 @@ import com.telcox.springmicroservices.payment.domain.entity.Payment;
 import com.telcox.springmicroservices.payment.domain.entity.PaymentAttempt;
 import com.telcox.springmicroservices.payment.domain.enums.PaymentMethod;
 import com.telcox.springmicroservices.payment.domain.enums.PaymentStatus;
-import com.telcox.springmicroservices.payment.dto.OrderCreatedEvent;
-import com.telcox.springmicroservices.payment.dto.PaymentCompletedEvent;
-import com.telcox.springmicroservices.payment.dto.PaymentFailedEvent;
-import com.telcox.springmicroservices.payment.repository.OutboxRepository;
+import com.telcox.springmicroservices.payment.dto.*;
+import com.telcox.springmicroservices.payment.repository.OutboxEventRepository;
 import com.telcox.springmicroservices.payment.repository.PaymentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,15 +27,143 @@ public class PaymentServiceImpl implements PaymentService {
     private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
     private final PaymentRepository paymentRepository;
-    private final OutboxRepository outboxRepository;
+    private final OutboxEventRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final IdempotencyService idempotencyService;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,
-                              OutboxRepository outboxRepository,
-                              ObjectMapper objectMapper) {
+            OutboxEventRepository outboxRepository,
+            ObjectMapper objectMapper,
+            IdempotencyService idempotencyService) {
         this.paymentRepository = paymentRepository;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+        this.idempotencyService = idempotencyService;
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse initiatePayment(PaymentRequest request, String idempotencyKey, String customerId) {
+        log.info("Initiating payment for Invoice ID: {}, Customer ID: {}", request.getInvoiceId(), customerId);
+
+        String cachedResponse = idempotencyService.processIdempotency(idempotencyKey);
+        if (cachedResponse != null) {
+            log.info("Returning cached response for Idempotency-Key: {}", idempotencyKey);
+            try {
+                return objectMapper.readValue(cachedResponse, PaymentResponse.class);
+            } catch (Exception e) {
+                log.error("Failed to deserialize cached response", e);
+                throw new RuntimeException("Deserialization failure", e);
+            }
+        }
+
+        PaymentResponse response = null;
+        try {
+            Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(idempotencyKey);
+            if (existingPayment.isPresent()) {
+                Payment payment = existingPayment.get();
+                response = buildResponse(payment);
+                return response;
+            }
+
+            Payment payment = new Payment();
+            payment.setInvoiceId(request.getInvoiceId());
+            payment.setCustomerId(customerId);
+            payment.setOrderId(request.getOrderId());
+            payment.setAmount(request.getAmount());
+            payment.setCurrency(request.getCurrency());
+            payment.setMethod(PaymentMethod.valueOf(request.getMethod()));
+            payment.setIdempotencyKey(idempotencyKey);
+
+            PaymentAttempt attempt = new PaymentAttempt();
+            attempt.setAttemptNo(1);
+            attempt.setAttemptedAt(OffsetDateTime.now());
+
+            boolean isFailed = request.getInvoiceId() != null &&
+                    (request.getInvoiceId().startsWith("FAIL_") || request.getInvoiceId().equals("114") || request.getInvoiceId().equals("555"));
+
+            if (isFailed) {
+                payment.setStatus(PaymentStatus.PENDING);
+                attempt.setResponseCode("51");
+                attempt.setResponseMessage("INSUFFICIENT_FUNDS");
+            } else {
+                /*
+                 * Idempotency sorununu kontrol etmek icin koydum.
+                 * try {
+                 * Thread.sleep(3000);
+                 * } catch (InterruptedException e) {
+                 * Thread.currentThread().interrupt();
+                 * throw new RuntimeException("Payment simulation interrupted", e);
+                 * }
+                 */
+                payment.setStatus(PaymentStatus.SUCCESS);
+                payment.setPaidAt(OffsetDateTime.now());
+                attempt.setResponseCode("00");
+                attempt.setResponseMessage("APPROVED");
+            }
+
+            payment.addAttempt(attempt);
+            payment = paymentRepository.save(payment);
+
+            response = buildResponse(payment);
+
+            if (!isFailed) {
+                emitPaymentCompletedEvent(payment);
+            }
+
+            return response;
+        } catch (Exception ex) {
+            log.error("Error processing payment", ex);
+            idempotencyService.removeKey(idempotencyKey);
+            throw ex;
+        } finally {
+            if (response != null) {
+                try {
+                    String jsonResponse = objectMapper.writeValueAsString(response);
+                    idempotencyService.cacheResponse(idempotencyKey, jsonResponse);
+                } catch (Exception e) {
+                    log.error("Failed to cache response", e);
+                }
+            }
+        }
+    }
+
+    private PaymentResponse buildResponse(Payment payment) {
+        return new PaymentResponse(
+                payment.getId(),
+                payment.getInvoiceId(),
+                payment.getCustomerId(),
+                payment.getAmount(),
+                payment.getCurrency(),
+                payment.getStatus().name(),
+                payment.getPaidAt());
+    }
+
+    private void emitPaymentCompletedEvent(Payment payment) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentId", payment.getId());
+        payload.put("invoiceId", payment.getInvoiceId());
+        payload.put("amount", payment.getAmount());
+        payload.put("currency", payment.getCurrency());
+        payload.put("paidAt", payment.getPaidAt() != null ? payment.getPaidAt().toString() : null);
+
+        String payloadJson;
+        try {
+            payloadJson = objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            log.error("Failed to serialize PaymentCompletedEvent payload", e);
+            throw new RuntimeException("Serialization failure", e);
+        }
+
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .eventId(UUID.randomUUID())
+                .aggregateType("Payment")
+                .aggregateId(payment.getId().toString())
+                .eventType("PaymentCompleted")
+                .payload(payloadJson)
+                .build();
+
+        outboxRepository.save(outboxEvent);
     }
 
     @Override
@@ -44,7 +172,6 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Processing payment for Order ID: {}, Customer ID: {}, Amount: {}",
                 event.getOrderId(), event.getCustomerId(), event.getTotalAmount());
 
-        // 1. Idempotency Check: Prevent duplicate payments for the same Order
         Optional<Payment> existingPayment = paymentRepository.findByOrderId(event.getOrderId());
         if (existingPayment.isPresent()) {
             Payment payment = existingPayment.get();
@@ -52,57 +179,39 @@ public class PaymentServiceImpl implements PaymentService {
                 log.info("Payment already successfully processed for Order ID: {}. Skipping.", event.getOrderId());
                 return;
             }
-            log.warn("Found existing failed/pending payment for Order ID: {}. Retrying processing.", event.getOrderId());
         }
 
-        // 2. Initialize Payment record
         Payment payment = new Payment();
         payment.setOrderId(event.getOrderId());
         payment.setAmount(event.getTotalAmount());
+        payment.setCurrency("TRY");
         payment.setMethod(PaymentMethod.CARD);
-        // paymentRequestId represents the unique business constraint preventing race-condition double billing
-        payment.setPaymentRequestId("order-payment-req-" + event.getOrderId());
+        payment.setIdempotencyKey("order-payment-req-" + event.getOrderId());
 
         PaymentAttempt attempt = new PaymentAttempt();
         attempt.setAttemptNo(1);
+        attempt.setAttemptedAt(OffsetDateTime.now());
 
-        // 3. Mock Payment Decision Logic
-        boolean isFailedCustomer = event.getCustomerId() != null && event.getCustomerId() == 999L;
+        boolean isFailedCustomer = event.getCustomerId() != null && event.getCustomerId().equals("999");
         String eventPayloadJson;
         String eventType;
 
         if (isFailedCustomer) {
-            log.warn("Simulating payment rejection for test/blacklisted customer (ID: 999)");
-            payment.setStatus(PaymentStatus.FAILED);
-            
-            attempt.setResponse("{\"status\":\"REJECTED\",\"code\":\"51\",\"reason\":\"INSUFFICIENT_FUNDS\"}");
+            payment.setStatus(PaymentStatus.PENDING);
+            attempt.setResponseCode("51");
+            attempt.setResponseMessage("INSUFFICIENT_FUNDS");
             payment.addAttempt(attempt);
 
-            PaymentFailedEvent failedEvent = new PaymentFailedEvent(
-                    event.getOrderId(),
-                    event.getCustomerId(),
-                    event.getTotalAmount(),
-                    "INSUFFICIENT_FUNDS",
-                    "Customer card limit is insufficient for simulation.",
-                    Instant.now()
-            );
-
-            try {
-                eventPayloadJson = objectMapper.writeValueAsString(failedEvent);
-            } catch (Exception e) {
-                log.error("Failed to serialize PaymentFailedEvent", e);
-                throw new RuntimeException("Serialization failure", e);
-            }
-            eventType = "PaymentFailed";
+            // Do not emit event yet, it will be handled by scheduler if it fails finally
+            eventType = null;
+            eventPayloadJson = null;
         } else {
-            log.info("Payment approved successfully for customer ID: {}", event.getCustomerId());
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setPaidAt(OffsetDateTime.now());
-            
-            attempt.setResponse("{\"status\":\"APPROVED\",\"code\":\"00\"}");
+            attempt.setResponseCode("00");
+            attempt.setResponseMessage("APPROVED");
             payment.addAttempt(attempt);
 
-            // Save the payment first to get the generated UUID
             payment = paymentRepository.save(payment);
 
             PaymentCompletedEvent completedEvent = new PaymentCompletedEvent(
@@ -110,35 +219,31 @@ public class PaymentServiceImpl implements PaymentService {
                     event.getOrderId(),
                     event.getCustomerId(),
                     event.getTotalAmount(),
-                    Instant.now()
-            );
+                    Instant.now());
 
             try {
                 eventPayloadJson = objectMapper.writeValueAsString(completedEvent);
             } catch (Exception e) {
-                log.error("Failed to serialize PaymentCompletedEvent", e);
                 throw new RuntimeException("Serialization failure", e);
             }
             eventType = "PaymentCompleted";
         }
 
-        // Save payment & attempts cascade
         if (payment.getId() == null) {
             payment = paymentRepository.save(payment);
         }
 
-        // 4. Write transactional outbox event in pure Lombok-free constructor style
-        OutboxEvent outboxEvent = new OutboxEvent(
-                UUID.randomUUID(),           // id
-                UUID.randomUUID(),           // event_id
-                "Payment",                   // aggregate_type
-                payment.getId().toString(),  // aggregate_id
-                eventType,                   // event_type
-                eventPayloadJson             // payload
-        );
+        if (eventType != null) {
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .aggregateType("Payment")
+                    .aggregateId(payment.getId().toString())
+                    .eventType(eventType)
+                    .payload(eventPayloadJson)
+                    .build();
 
-        outboxRepository.save(outboxEvent);
-        log.info("Saved outbox event {} for Order ID: {}", eventType, event.getOrderId());
+            outboxRepository.save(outboxEvent);
+        }
     }
 
     @Override
@@ -148,19 +253,16 @@ public class PaymentServiceImpl implements PaymentService {
 
         Optional<Payment> existingPaymentOpt = paymentRepository.findById(event.getPaymentId());
         if (existingPaymentOpt.isEmpty()) {
-            log.error("Payment not found for Payment ID: {}", event.getPaymentId());
             return;
         }
 
         Payment payment = existingPaymentOpt.get();
 
         if (payment.getStatus() == PaymentStatus.REFUNDED) {
-            log.info("Payment already refunded for Payment ID: {}. Skipping.", event.getPaymentId());
             return;
         }
 
         if (payment.getStatus() != PaymentStatus.SUCCESS) {
-            log.warn("Cannot refund payment that is not in SUCCESS state. Payment ID: {}, Status: {}", event.getPaymentId(), payment.getStatus());
             return;
         }
 
@@ -171,27 +273,23 @@ public class PaymentServiceImpl implements PaymentService {
                 payment.getId(),
                 payment.getOrderId(),
                 event.getAmount(),
-                Instant.now()
-        );
+                Instant.now());
 
         String eventPayloadJson;
         try {
             eventPayloadJson = objectMapper.writeValueAsString(refundedEvent);
         } catch (Exception e) {
-            log.error("Failed to serialize PaymentRefundedEvent", e);
             throw new RuntimeException("Serialization failure", e);
         }
 
-        OutboxEvent outboxEvent = new OutboxEvent(
-                UUID.randomUUID(),           // id
-                UUID.randomUUID(),           // event_id
-                "Payment",                   // aggregate_type
-                payment.getId().toString(),  // aggregate_id
-                "PaymentRefunded",           // event_type
-                eventPayloadJson             // payload
-        );
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .eventId(UUID.randomUUID())
+                .aggregateType("Payment")
+                .aggregateId(payment.getId().toString())
+                .eventType("PaymentRefunded")
+                .payload(eventPayloadJson)
+                .build();
 
         outboxRepository.save(outboxEvent);
-        log.info("Saved outbox event PaymentRefunded for Payment ID: {}", payment.getId());
     }
 }

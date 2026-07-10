@@ -8,3 +8,7 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+
+payment:
+  retry:
+    delays-hours: 24,72,168
