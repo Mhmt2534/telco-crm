@@ -5,7 +5,7 @@ import java.time.Instant;
 
 public class PaymentFailedEvent {
     private Long orderId;
-    private Long customerId;
+    private String customerId;
     private BigDecimal amount;
     private String errorCode;
     private String errorMessage;
@@ -14,7 +14,7 @@ public class PaymentFailedEvent {
     public PaymentFailedEvent() {
     }
 
-    public PaymentFailedEvent(Long orderId, Long customerId, BigDecimal amount, String errorCode, String errorMessage, Instant occurredAt) {
+    public PaymentFailedEvent(Long orderId, String customerId, BigDecimal amount, String errorCode, String errorMessage, Instant occurredAt) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.amount = amount;
@@ -31,11 +31,11 @@ public class PaymentFailedEvent {
         this.orderId = orderId;
     }
 
-    public Long getCustomerId() {
+    public String getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(String customerId) {
         this.customerId = customerId;
     }
 

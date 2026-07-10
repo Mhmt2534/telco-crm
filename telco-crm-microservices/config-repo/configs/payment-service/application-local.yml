@@ -7,3 +7,7 @@ spring:
     url: jdbc:postgresql://localhost:5442/payment_db
     user: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+
+payment:
+  retry:
+    delays-seconds: 10,20,30
