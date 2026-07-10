@@ -118,7 +118,7 @@ public class PaymentRetryScheduler {
 
         // Mock PSP Call for retry
         boolean isFailed = payment.getInvoiceId() != null && 
-            (payment.getInvoiceId().startsWith("FAIL_") || payment.getInvoiceId().equals("112"));
+            (payment.getInvoiceId().startsWith("FAIL_") || payment.getInvoiceId().equals("112") || payment.getInvoiceId().equals("555"));
 
         if (isFailed) {
             newAttempt.setResponseCode("51");

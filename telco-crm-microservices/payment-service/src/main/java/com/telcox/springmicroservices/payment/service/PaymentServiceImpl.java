@@ -80,7 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
             attempt.setAttemptedAt(OffsetDateTime.now());
 
             boolean isFailed = request.getInvoiceId() != null &&
-                    (request.getInvoiceId().startsWith("FAIL_") || request.getInvoiceId().equals("114"));
+                    (request.getInvoiceId().startsWith("FAIL_") || request.getInvoiceId().equals("114") || request.getInvoiceId().equals("555"));
 
             if (isFailed) {
                 payment.setStatus(PaymentStatus.PENDING);
