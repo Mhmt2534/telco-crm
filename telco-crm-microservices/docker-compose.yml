@@ -487,10 +487,6 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-      customer-db:
-        condition: service_healthy
-      product-db:
-        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
