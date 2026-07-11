@@ -13,12 +13,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF to allow services to register
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().authenticated()
-            )
-            .httpBasic(basic -> {}); // Enable basic auth
-        
+                .csrf(csrf -> csrf.disable()) // Disable CSRF to allow services to register
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/**").permitAll()
+                        .anyRequest().authenticated())
+                .httpBasic(basic -> {
+                }); // Enable basic auth
+
         return http.build();
     }
 }

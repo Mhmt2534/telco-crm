@@ -5,5 +5,5 @@ spring:
   application:
     name: ticket-service
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}"
 

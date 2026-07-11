@@ -8,3 +8,13 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+  datasource:
+    url: jdbc:postgresql://host.minikube.internal:5432/notification_db
+  flyway:
+    url: jdbc:postgresql://host.minikube.internal:5432/notification_db

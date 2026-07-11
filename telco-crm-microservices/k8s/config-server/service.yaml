@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+  namespace: telco-crm
+spec:
+  type: ClusterIP
+  selector:
+    app: config-server
+  ports:
+    - protocol: TCP
+      port: 8888
+      targetPort: 8888

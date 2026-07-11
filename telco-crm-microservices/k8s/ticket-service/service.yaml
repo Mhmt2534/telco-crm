@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-service
+  namespace: telco-crm
+spec:
+  type: ClusterIP
+  selector:
+    app: ticket-service
+  ports:
+    - protocol: TCP
+      port: 9010
+      targetPort: 9010

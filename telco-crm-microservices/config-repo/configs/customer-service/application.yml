@@ -8,3 +8,20 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+  datasource:
+    url: jdbc:postgresql://host.minikube.internal:5432/customer_db
+  flyway:
+    url: jdbc:postgresql://host.minikube.internal:5432/customer_db
+
+keycloak:
+  server-url: http://host.minikube.internal:9011
+
+app:
+  security:
+    pii-encryption-key: ${AES_GCM_KEY}

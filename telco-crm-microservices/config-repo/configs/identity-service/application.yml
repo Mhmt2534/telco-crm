@@ -17,3 +17,16 @@ logging:
     root: INFO
     com.telcox: DEBUG
     org.springframework.web.client: DEBUG
+---
+spring:
+  config:
+    activate:
+      on-profile: k8s
+  datasource:
+    url: jdbc:postgresql://host.minikube.internal:5432/identity_db
+  flyway:
+    url: jdbc:postgresql://host.minikube.internal:5432/identity_db
+
+keycloak:
+  server-url: http://host.minikube.internal:9011
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
