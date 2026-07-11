@@ -14,6 +14,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -21,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import com.telcox.springmicroservices.billing.client.UsageServiceClient;
+import com.telcox.springmicroservices.billing.dto.UsageOverageSummaryDto;
 
 @Component
 public class BillRunScheduler {
@@ -32,17 +36,20 @@ public class BillRunScheduler {
     private final OutboxEventRepository outboxEventRepository;
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
+    private final UsageServiceClient usageServiceClient;
 
     public BillRunScheduler(BillCycleRepository billCycleRepository,
                             InvoiceRepository invoiceRepository,
                             OutboxEventRepository outboxEventRepository,
                             RedissonClient redissonClient,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            UsageServiceClient usageServiceClient) {
         this.billCycleRepository = billCycleRepository;
         this.invoiceRepository = invoiceRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.redissonClient = redissonClient;
         this.objectMapper = objectMapper;
+        this.usageServiceClient = usageServiceClient;
     }
 
     // Cron = Saniye Dakika Saat Gun Ay Gun(Hafta)
@@ -96,18 +103,76 @@ public class BillRunScheduler {
         Invoice invoice = new Invoice();
         invoice.setCustomerId(cycle.getCustomerId());
         invoice.setSubscriptionId(cycle.getSubscriptionId());
-        invoice.setAmount(cycle.getFixedAmount()); // Gelecekte usage-service uzerinden asimlar da eklenebilir.
         invoice.setDueDate(LocalDateTime.now().plusDays(15)); // Son odeme tarihi: +15 gun
         invoice.setStatus(InvoiceStatus.UNPAID);
 
+        // Sabit ücret satırı
         InvoiceLine line = new InvoiceLine();
         line.setDescription("Monthly Fixed Tariff Fee");
         line.setQuantity(1);
         line.setUnitPrice(cycle.getFixedAmount());
         line.setLineTotal(cycle.getFixedAmount());
-
         invoice.addLine(line);
-        
+
+        BigDecimal totalAmount = cycle.getFixedAmount();
+
+        // 2. Kota Aşım (Overage) Bilgilerini usage-service'ten çek ve faturaya ekle
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusMonths(1);
+        Instant startInstant = start.atZone(java.time.ZoneId.systemDefault()).toInstant();
+        Instant endInstant = end.atZone(java.time.ZoneId.systemDefault()).toInstant();
+
+        try {
+            List<UsageOverageSummaryDto> overages = usageServiceClient.getOverageSummary(
+                    cycle.getSubscriptionId(),
+                    startInstant.toString(),
+                    endInstant.toString()
+            );
+
+            if (overages != null) {
+                BigDecimal dataPrice = new BigDecimal("0.05");
+                BigDecimal voicePrice = new BigDecimal("0.10");
+                BigDecimal smsPrice = new BigDecimal("0.03");
+
+                for (UsageOverageSummaryDto item : overages) {
+                    if (item.getTotalOverageAmount() == null || item.getTotalOverageAmount() <= 0.0) {
+                        continue;
+                    }
+
+                    BigDecimal price = BigDecimal.ZERO;
+                    String desc = "";
+
+                    if ("DATA".equals(item.getType())) {
+                        price = dataPrice;
+                        desc = "DATA Overage Charge";
+                    } else if ("VOICE".equals(item.getType())) {
+                        price = voicePrice;
+                        desc = "VOICE Overage Charge";
+                    } else if ("SMS".equals(item.getType())) {
+                        price = smsPrice;
+                        desc = "SMS Overage Charge";
+                    } else {
+                        continue;
+                    }
+
+                    BigDecimal quantityDec = BigDecimal.valueOf(item.getTotalOverageAmount());
+                    BigDecimal lineTotal = quantityDec.multiply(price).setScale(2, java.math.RoundingMode.HALF_UP);
+
+                    InvoiceLine overageLine = new InvoiceLine();
+                    overageLine.setDescription(desc);
+                    overageLine.setQuantity(quantityDec.intValue());
+                    overageLine.setUnitPrice(price);
+                    overageLine.setLineTotal(lineTotal);
+
+                    invoice.addLine(overageLine);
+                    totalAmount = totalAmount.add(lineTotal);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch overage summary from usage-service for subscription {}, fallback to fixed amount only.", cycle.getSubscriptionId(), e);
+        }
+
+        invoice.setAmount(totalAmount);
         invoice = invoiceRepository.save(invoice);
 
         // 2. Event Payload hazirla

@@ -46,6 +46,12 @@ public class UsageRecord extends BaseEntity {
     @Column(name = "recorded_at", nullable = false)
     private Instant recordedAt;
 
+    @Column(name = "overage", nullable = false)
+    private boolean overage = false;
+
+    @Column(name = "overage_amount")
+    private Double overageAmount = 0.0;
+
     public UsageRecord() {}
 
     public UsageRecord(UUID subscriptionId,
@@ -81,4 +87,10 @@ public class UsageRecord extends BaseEntity {
 
     public Instant getRecordedAt()                  { return recordedAt; }
     public void setRecordedAt(Instant recordedAt)   { this.recordedAt = recordedAt; }
+
+    public boolean isOverage()                             { return overage; }
+    public void setOverage(boolean overage)                { this.overage = overage; }
+
+    public Double getOverageAmount()                       { return overageAmount; }
+    public void setOverageAmount(Double overageAmount)     { this.overageAmount = overageAmount; }
 }
