@@ -9,10 +9,13 @@ import com.telcox.springmicroservices.payment.domain.enums.PaymentStatus;
 import com.telcox.springmicroservices.payment.dto.*;
 import com.telcox.springmicroservices.payment.repository.OutboxEventRepository;
 import com.telcox.springmicroservices.payment.repository.PaymentRepository;
+import com.telcox.springmicroservices.payment.repository.WalletRepository;
+import com.telcox.springmicroservices.payment.domain.entity.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -30,15 +33,21 @@ public class PaymentServiceImpl implements PaymentService {
     private final OutboxEventRepository outboxRepository;
     private final ObjectMapper objectMapper;
     private final IdempotencyService idempotencyService;
+    private final WalletRepository walletRepository;
+    private final WalletSecurityService walletSecurityService;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,
             OutboxEventRepository outboxRepository,
             ObjectMapper objectMapper,
-            IdempotencyService idempotencyService) {
+            IdempotencyService idempotencyService,
+            WalletRepository walletRepository,
+            WalletSecurityService walletSecurityService) {
         this.paymentRepository = paymentRepository;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
         this.idempotencyService = idempotencyService;
+        this.walletRepository = walletRepository;
+        this.walletSecurityService = walletSecurityService;
     }
 
     @Override
@@ -82,20 +91,50 @@ public class PaymentServiceImpl implements PaymentService {
             boolean isFailed = request.getInvoiceId() != null &&
                     (request.getInvoiceId().startsWith("FAIL_") || request.getInvoiceId().equals("114") || request.getInvoiceId().equals("555"));
 
-            if (isFailed) {
+            BigDecimal amountToPay = request.getAmount();
+            BigDecimal walletDeduction = BigDecimal.ZERO;
+            
+            // Priority Payment via Wallet
+            Optional<Wallet> walletOpt = walletRepository.findByCustomerId(customerId);
+            if (walletOpt.isPresent()) {
+                Wallet wallet = walletOpt.get();
+                walletSecurityService.verifyHash(wallet); // verify tampering
+                
+                BigDecimal currentBalance = wallet.getBalance();
+                if (currentBalance.compareTo(BigDecimal.ZERO) > 0) {
+                    if (currentBalance.compareTo(amountToPay) >= 0) {
+                        // Wallet covers everything
+                        walletDeduction = amountToPay;
+                        wallet.setBalance(currentBalance.subtract(amountToPay));
+                        amountToPay = BigDecimal.ZERO;
+                    } else {
+                        // Wallet covers partially
+                        walletDeduction = currentBalance;
+                        wallet.setBalance(BigDecimal.ZERO);
+                        amountToPay = amountToPay.subtract(walletDeduction);
+                    }
+                    
+                    wallet.setBalanceHash(walletSecurityService.calculateHash(wallet.getCustomerId(), wallet.getBalance()));
+                    walletRepository.save(wallet);
+                    
+                    log.info("Deducted {} from wallet for invoice {}. Remaining amount for PSP: {}", 
+                            walletDeduction, request.getInvoiceId(), amountToPay);
+                }
+            }
+            
+            // If amountToPay is 0, we don't need PSP call.
+            if (amountToPay.compareTo(BigDecimal.ZERO) == 0) {
+                payment.setStatus(PaymentStatus.SUCCESS);
+                payment.setPaidAt(OffsetDateTime.now());
+                payment.setMethod(PaymentMethod.WALLET); // Record as fully wallet payment
+                attempt.setResponseCode("00");
+                attempt.setResponseMessage("APPROVED_FROM_WALLET");
+                log.info("Payment fully covered by wallet.");
+            } else if (isFailed) {
                 payment.setStatus(PaymentStatus.PENDING);
                 attempt.setResponseCode("51");
                 attempt.setResponseMessage("INSUFFICIENT_FUNDS");
             } else {
-                /*
-                 * Idempotency sorununu kontrol etmek icin koydum.
-                 * try {
-                 * Thread.sleep(3000);
-                 * } catch (InterruptedException e) {
-                 * Thread.currentThread().interrupt();
-                 * throw new RuntimeException("Payment simulation interrupted", e);
-                 * }
-                 */
                 payment.setStatus(PaymentStatus.SUCCESS);
                 payment.setPaidAt(OffsetDateTime.now());
                 attempt.setResponseCode("00");
@@ -291,5 +330,43 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
 
         outboxRepository.save(outboxEvent);
+    }
+    
+    @Override
+    @Transactional
+    public WalletBalanceResponse topUpWallet(String customerId, WalletTopUpRequest request) {
+        Wallet wallet = walletRepository.findByCustomerId(customerId).orElseGet(() -> {
+            Wallet newWallet = new Wallet();
+            newWallet.setCustomerId(customerId);
+            newWallet.setBalance(BigDecimal.ZERO);
+            return newWallet;
+        });
+
+        if (wallet.getId() != null) {
+            walletSecurityService.verifyHash(wallet);
+        }
+
+        BigDecimal newBalance = wallet.getBalance().add(request.getAmount());
+        wallet.setBalance(newBalance);
+        wallet.setBalanceHash(walletSecurityService.calculateHash(wallet.getCustomerId(), newBalance));
+        
+        wallet = walletRepository.save(wallet);
+        
+        log.info("Wallet topped up for customerId: {}. New balance: {}", customerId, newBalance);
+        return new WalletBalanceResponse(wallet.getCustomerId(), wallet.getBalance());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WalletBalanceResponse getWalletBalance(String customerId) {
+        Optional<Wallet> walletOpt = walletRepository.findByCustomerId(customerId);
+        if (walletOpt.isEmpty()) {
+            return new WalletBalanceResponse(customerId, BigDecimal.ZERO);
+        }
+        
+        Wallet wallet = walletOpt.get();
+        walletSecurityService.verifyHash(wallet);
+        
+        return new WalletBalanceResponse(wallet.getCustomerId(), wallet.getBalance());
     }
 }

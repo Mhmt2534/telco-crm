@@ -2,6 +2,8 @@ package com.telcox.springmicroservices.payment.controller;
 
 import com.telcox.springmicroservices.payment.dto.PaymentRequest;
 import com.telcox.springmicroservices.payment.dto.PaymentResponse;
+import com.telcox.springmicroservices.payment.dto.WalletBalanceResponse;
+import com.telcox.springmicroservices.payment.dto.WalletTopUpRequest;
 import com.telcox.springmicroservices.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -71,5 +73,28 @@ public class PaymentController {
             MDC.remove("correlationId");
             MDC.remove("userId");
         }
+    }
+
+    @PostMapping("/wallet/top-up")
+    @Operation(summary = "Top up customer wallet", description = "Adds funds to a customer's digital wallet")
+    public ResponseEntity<WalletBalanceResponse> topUpWallet(
+            @Parameter(description = "User ID propagated from API Gateway")
+            @RequestHeader(value = "X-User-Id") String userId,
+            @Valid @RequestBody WalletTopUpRequest request) {
+        
+        log.info("Received wallet top-up request for user: {}, amount: {}", userId, request.getAmount());
+        WalletBalanceResponse response = paymentService.topUpWallet(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/wallet/balance/{customerId}")
+    @Operation(summary = "Get customer wallet balance", description = "Retrieves the current balance of a customer's digital wallet")
+    public ResponseEntity<WalletBalanceResponse> getWalletBalance(
+            @Parameter(description = "Customer ID")
+            @PathVariable("customerId") String customerId) {
+        
+        log.info("Received wallet balance request for customer: {}", customerId);
+        WalletBalanceResponse response = paymentService.getWalletBalance(customerId);
+        return ResponseEntity.ok(response);
     }
 }
