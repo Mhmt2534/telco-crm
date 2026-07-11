@@ -12,4 +12,7 @@ public interface PaymentService {
     void refundPayment(PaymentRefundRequestedEvent event);
     
     PaymentResponse initiatePayment(PaymentRequest request, String idempotencyKey, String customerId);
+    
+    com.telcox.springmicroservices.payment.dto.WalletBalanceResponse getWalletBalance(String customerId);
+    com.telcox.springmicroservices.payment.dto.WalletBalanceResponse topUpWallet(String customerId, com.telcox.springmicroservices.payment.dto.WalletTopUpRequest request);
 }
