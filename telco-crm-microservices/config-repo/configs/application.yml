@@ -22,27 +22,3 @@ management:
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
-
----
-eureka:
-  client:
-    service-url:
-      defaultZone: http://${EUREKA_USERNAME:eureka}:${EUREKA_PASSWORD:eureka}@discovery-server:8761/eureka/
-
-spring:
-  config:
-    activate:
-      on-profile: k8s
-  config:
-    import: optional:configserver:http://config-server:8888/
-  kafka:
-    bootstrap-servers: host.minikube.internal:9092
-  data:
-    redis:
-      host: host.minikube.internal
-      port: 6379
-
-management:
-  zipkin:
-    tracing:
-      endpoint: http://host.minikube.internal:9411/api/v2/spans

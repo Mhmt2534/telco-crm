@@ -12,13 +12,3 @@ spring:
 payment:
   retry:
     delays-hours: 24,72,168
-
----
-spring:
-  config:
-    activate:
-      on-profile: k8s
-  datasource:
-    url: jdbc:postgresql://host.minikube.internal:5432/payment_db
-  flyway:
-    url: jdbc:postgresql://host.minikube.internal:5432/payment_db

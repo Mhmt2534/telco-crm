@@ -44,4 +44,10 @@ FROM runtime-base
 ARG SERVICE
 WORKDIR /app
 COPY --from=build /workspace/${SERVICE}/target/*.jar app.jar
+
+# config-server needs the config-repo directory at runtime so it can serve
+# profile-specific configs (application-k8s.yml etc.) via its native backend.
+# For other services, the COPY below is a harmless no-op (the glob won't match).
+COPY --from=build /workspace/config-repo/ config-repo/
+
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

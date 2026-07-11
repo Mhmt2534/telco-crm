@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://host.minikube.internal:5435/product_catalog_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  flyway:
+    url: jdbc:postgresql://host.minikube.internal:5435/product_catalog_db
+    user: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
