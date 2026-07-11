@@ -75,7 +75,7 @@ public class SubscriptionActivatedConsumer {
             }
 
             SubscriptionActivatedEvent event = objectMapper.readValue(payloadStr, SubscriptionActivatedEvent.class);
-            log.info("Processing SubscriptionActivated for subscription: {}", event.getId());
+            log.info("Processing SubscriptionActivated for subscription: {}", event.getSubscriptionId());
 
             // 1. Fatura kesim gununu belirle (Bugunun gunu olsun)
             int cutOffDay = LocalDate.now().getDayOfMonth();
@@ -86,14 +86,14 @@ public class SubscriptionActivatedConsumer {
             // 3. BillCycle kaydi olustur
             BillCycle billCycle = new BillCycle();
             billCycle.setCustomerId(event.getCustomerId());
-            billCycle.setSubscriptionId(event.getId());
+            billCycle.setSubscriptionId(event.getSubscriptionId());
             billCycle.setMsisdn(event.getMsisdn());
             billCycle.setCutOffDay(cutOffDay);
             billCycle.setFixedAmount(fixedAmount);
 
             billCycleRepository.save(billCycle);
 
-            log.info("BillCycle successfully created for subscriptionId: {}, cutOffDay: {}", event.getId(), cutOffDay);
+            log.info("BillCycle successfully created for subscriptionId: {}, cutOffDay: {}", event.getSubscriptionId(), cutOffDay);
 
         } catch (Exception ex) {
             log.error("Failed to process SubscriptionActivated Kafka message: {}", message, ex);

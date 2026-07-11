@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import com.telcox.springmicroservices.usage.dto.OverageSummaryProjection;
 import java.util.UUID;
 
 @Service
@@ -68,20 +70,36 @@ public class QuotaService {
         Quota quota = quotaRepository.findBySubscriptionId(event.getSubscriptionId())
                 .orElseThrow(() -> new IllegalArgumentException("Kota bulunamadı. SubscriptionId: " + event.getSubscriptionId()));
 
-        // Tüketimi düş
+        // Tüketimi düş ve aşım (overage) miktarını hesapla
         UsageType type = UsageType.valueOf(event.getType());
         double amount = event.getAmount();
+        double overageAmount = 0.0;
 
         switch (type) {
-            case VOICE:
-                quota.setMinutesRemaining(Math.max(0, quota.getMinutesRemaining() - (int) amount));
+            case VOICE: {
+                int oldRemaining = quota.getMinutesRemaining();
+                int used = (int) amount;
+                int newRemaining = Math.max(0, oldRemaining - used);
+                overageAmount = Math.max(0.0, (double) (used - oldRemaining));
+                quota.setMinutesRemaining(newRemaining);
                 break;
-            case SMS:
-                quota.setSmsRemaining(Math.max(0, quota.getSmsRemaining() - (int) amount));
+            }
+            case SMS: {
+                int oldRemaining = quota.getSmsRemaining();
+                int used = (int) amount;
+                int newRemaining = Math.max(0, oldRemaining - used);
+                overageAmount = Math.max(0.0, (double) (used - oldRemaining));
+                quota.setSmsRemaining(newRemaining);
                 break;
-            case DATA:
-                quota.setMbRemaining(Math.max(0L, quota.getMbRemaining() - (long) amount));
+            }
+            case DATA: {
+                long oldRemaining = quota.getMbRemaining();
+                long used = (long) amount;
+                long newRemaining = Math.max(0L, oldRemaining - used);
+                overageAmount = Math.max(0.0, (double) (used - oldRemaining));
+                quota.setMbRemaining(newRemaining);
                 break;
+            }
         }
         quotaRepository.save(quota);
 
@@ -93,6 +111,15 @@ public class QuotaService {
         record.setQuantity(amount); // Entity field is quantity
         record.setCdrRef(event.getCdrRef());
         record.setRecordedAt(event.getRecordedAt() != null ? event.getRecordedAt() : Instant.now());
+        
+        // Aşım bilgileri set ediliyor
+        if (overageAmount > 0.0) {
+            record.setOverage(true);
+            record.setOverageAmount(overageAmount);
+        } else {
+            record.setOverage(false);
+            record.setOverageAmount(0.0);
+        }
         usageRecordRepository.save(record);
 
         log.info("Processed CDR: {} amount of {} for MSISDN: {}", amount, type, event.getMsisdn());
@@ -181,6 +208,12 @@ public class QuotaService {
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize outbox event payload", e);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<OverageSummaryProjection> getOverageSummary(UUID subscriptionId, Instant start, Instant end) {
+        log.info("Fetching overage summary for subscription: {} from {} to {}", subscriptionId, start, end);
+        return usageRecordRepository.getOverageSummary(subscriptionId, start, end);
     }
 
     // ── Mapper ────────────────────────────────────────────────

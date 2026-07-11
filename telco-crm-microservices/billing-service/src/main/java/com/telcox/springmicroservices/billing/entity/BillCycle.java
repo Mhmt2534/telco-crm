@@ -3,6 +3,7 @@ package com.telcox.springmicroservices.billing.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "bill_cycle")
@@ -16,7 +17,7 @@ public class BillCycle {
     private Long customerId;
 
     @Column(name = "subscription_id", nullable = false)
-    private Long subscriptionId;
+    private UUID subscriptionId;
 
     @Column(nullable = false, length = 20)
     private String msisdn;
@@ -33,7 +34,7 @@ public class BillCycle {
     public BillCycle() {
     }
 
-    public BillCycle(Long customerId, Long subscriptionId, String msisdn, Integer cutOffDay, BigDecimal fixedAmount) {
+    public BillCycle(Long customerId, UUID subscriptionId, String msisdn, Integer cutOffDay, BigDecimal fixedAmount) {
         this.customerId = customerId;
         this.subscriptionId = subscriptionId;
         this.msisdn = msisdn;
@@ -57,11 +58,11 @@ public class BillCycle {
         this.customerId = customerId;
     }
 
-    public Long getSubscriptionId() {
+    public UUID getSubscriptionId() {
         return subscriptionId;
     }
 
-    public void setSubscriptionId(Long subscriptionId) {
+    public void setSubscriptionId(UUID subscriptionId) {
         this.subscriptionId = subscriptionId;
     }
 

@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "invoice")
@@ -18,7 +19,7 @@ public class Invoice {
     private Long customerId;
 
     @Column(name = "subscription_id", nullable = false)
-    private Long subscriptionId;
+    private UUID subscriptionId;
 
     @Column(nullable = false)
     private BigDecimal amount;
@@ -39,7 +40,7 @@ public class Invoice {
     public Invoice() {
     }
 
-    public Invoice(Long customerId, Long subscriptionId, BigDecimal amount, LocalDateTime dueDate) {
+    public Invoice(Long customerId, UUID subscriptionId, BigDecimal amount, LocalDateTime dueDate) {
         this.customerId = customerId;
         this.subscriptionId = subscriptionId;
         this.amount = amount;
@@ -62,11 +63,11 @@ public class Invoice {
         this.customerId = customerId;
     }
 
-    public Long getSubscriptionId() {
+    public UUID getSubscriptionId() {
         return subscriptionId;
     }
 
-    public void setSubscriptionId(Long subscriptionId) {
+    public void setSubscriptionId(UUID subscriptionId) {
         this.subscriptionId = subscriptionId;
     }
 
