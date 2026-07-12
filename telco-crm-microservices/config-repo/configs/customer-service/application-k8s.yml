@@ -10,6 +10,9 @@ spring:
 
 keycloak:
   server-url: http://host.minikube.internal:9011
+  realm: telco-crm-realm
+  client-id: telco-crm-client
+  client-secret: B3Zlh6fORItPVGdybGkILIkH9S3hQgex
 
 app:
   security:

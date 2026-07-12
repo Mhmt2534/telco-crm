@@ -5,7 +5,7 @@ eureka:
 
 spring:
   kafka:
-    bootstrap-servers: host.minikube.internal:9092
+    bootstrap-servers: host.minikube.internal:9094
   data:
     redis:
       host: host.minikube.internal
