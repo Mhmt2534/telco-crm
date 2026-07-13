@@ -1,0 +1,7 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://host.minikube.internal:9011/realms/telco-crm-realm/protocol/openid-connect/certs
+          issuer-uri: http://host.minikube.internal:9011/realms/telco-crm-realm

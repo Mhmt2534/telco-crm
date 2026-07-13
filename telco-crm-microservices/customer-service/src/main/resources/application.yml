@@ -5,12 +5,12 @@ spring:
   application:
     name: customer-service
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}"
   flyway:
     enabled: true
     baseline-on-migrate: true
 
 app:
   security:
-    pii-encryption-key: ${PII_ENCRYPTION_KEY:default-dev-key-32-chars-long!!!}
+    pii-encryption-key: ${PII_ENCRYPTION_KEY}
 

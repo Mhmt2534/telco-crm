@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: subscription-service
+  namespace: telco-crm
+spec:
+  type: ClusterIP
+  selector:
+    app: subscription-service
+  ports:
+    - protocol: TCP
+      port: 9005
+      targetPort: 9005
