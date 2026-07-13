@@ -101,11 +101,22 @@ public class OutboxEventPublisher {
             payload.put("customerId", order.getCustomerId());
             
             String tariffCode = null;
+            String productType = null;
             if (order.getItems() != null && !order.getItems().isEmpty()) {
-                tariffCode = order.getItems().iterator().next().getProductCode();
+                var firstItem = order.getItems().iterator().next();
+                tariffCode = firstItem.getProductCode();
+                if (firstItem.getProductType() != null) {
+                    productType = firstItem.getProductType().name();
+                }
             }
             if (tariffCode != null) {
                 payload.put("tariffCode", tariffCode);
+            }
+            if (productType != null) {
+                payload.put("productType", productType);
+            }
+            if (order.getSubscriptionId() != null) {
+                payload.put("subscriptionId", order.getSubscriptionId().toString());
             }
             
             payload.put("occurredAt", Instant.now().toString());

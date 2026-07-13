@@ -16,6 +16,9 @@ import com.telcox.springmicroservices.subscription.repository.OutboxEventReposit
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.telcox.springmicroservices.subscription.dto.SubscriptionActivatedEvent;
 import com.telcox.springmicroservices.subscription.dto.SubscriptionActivationFailedEvent;
+import com.telcox.springmicroservices.subscription.repository.SubscriptionAddonRepository;
+import com.telcox.springmicroservices.subscription.entity.SubscriptionAddon;
+import com.telcox.springmicroservices.subscription.dto.OrderConfirmedEvent;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -30,15 +33,18 @@ public class SubscriptionService {
     private final MsisdnAllocationService msisdnAllocationService;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final SubscriptionAddonRepository subscriptionAddonRepository;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
             MsisdnAllocationService msisdnAllocationService,
             OutboxEventRepository outboxEventRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            SubscriptionAddonRepository subscriptionAddonRepository) {
         this.subscriptionRepository = subscriptionRepository;
         this.msisdnAllocationService = msisdnAllocationService;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
+        this.subscriptionAddonRepository = subscriptionAddonRepository;
     }
 
     /**
@@ -217,6 +223,51 @@ public class SubscriptionService {
             log.info("[SUBSCRIPTION] SubscriptionActivationFailed eventi Outbox'a başarıyla yazıldı. OrderId: {}", orderId);
         } catch (Exception e) {
             log.error("[SUBSCRIPTION] Failed to publish SubscriptionActivationFailed event for OrderId: {}", orderId, e);
+        }
+    }
+
+    @Transactional
+    public void addAddonToSubscription(OrderConfirmedEvent event) {
+        log.info("[SUBSCRIPTION] Ek paket satın alımı işleniyor. OrderId: {}, SubscriptionId: {}, Addon: {}",
+                event.getOrderId(), event.getSubscriptionId(), event.getTariffCode());
+
+        if (event.getSubscriptionId() == null) {
+            throw new IllegalArgumentException("Addon siparişi için subscriptionId boş olamaz.");
+        }
+
+        Subscription subscription = subscriptionRepository.findById(event.getSubscriptionId())
+                .orElseThrow(() -> new IllegalArgumentException("Abonelik bulunamadı: " + event.getSubscriptionId()));
+
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new IllegalStateException("Abonelik aktif değil. Durum: " + subscription.getStatus());
+        }
+
+        SubscriptionAddon addon = SubscriptionAddon.builder()
+                .subscription(subscription)
+                .addonCode(event.getTariffCode()) // event'ten gelen kod
+                .activatedAt(Instant.now())
+                .build();
+        subscriptionAddonRepository.save(addon);
+
+        try {
+            OutboxEvent addonActivatedEvent = new OutboxEvent();
+            addonActivatedEvent.setEventId(UUID.randomUUID());
+            addonActivatedEvent.setAggregateType("Subscription");
+            addonActivatedEvent.setAggregateId(subscription.getId().toString());
+            addonActivatedEvent.setEventType("AddonActivated");
+
+            // We can reuse SubscriptionActivatedEvent or just write a simple map as payload.
+            // Using a structured JSON for the outbox
+            String payload = String.format("{\"orderId\":%d,\"subscriptionId\":\"%s\",\"addonCode\":\"%s\",\"msisdn\":\"%s\",\"status\":\"ACTIVATED\"}",
+                    event.getOrderId(), subscription.getId(), event.getTariffCode(), subscription.getMsisdn());
+            
+            addonActivatedEvent.setPayload(payload);
+            addonActivatedEvent.setStatus(OutboxStatus.PENDING);
+            outboxEventRepository.save(addonActivatedEvent);
+
+            log.info("[SUBSCRIPTION] AddonActivated outbox eventi başarıyla yazıldı. SubscriptionId: {}", subscription.getId());
+        } catch (Exception e) {
+            throw new RuntimeException("AddonActivated event'i outbox'a yazılamadı", e);
         }
     }
 }
