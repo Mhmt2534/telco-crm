@@ -1,3 +1,6 @@
+server:
+  port: 9005
+
 spring:
   datasource:
     url: jdbc:postgresql://host.minikube.internal:5437/subscription_db

@@ -1,3 +1,6 @@
+server:
+  port: 9006
+
 spring:
   datasource:
     url: jdbc:postgresql://host.minikube.internal:5439/usage_db
