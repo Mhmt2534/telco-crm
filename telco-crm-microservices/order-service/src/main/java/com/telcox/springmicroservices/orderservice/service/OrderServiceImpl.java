@@ -10,6 +10,7 @@ import com.telcox.springmicroservices.orderservice.mapper.OrderMapper;
 import com.telcox.springmicroservices.orderservice.repository.OrderRepository;
 import com.telcox.springmicroservices.orderservice.repository.SagaStateRepository;
 import com.telcox.common.core.exception.ResourceNotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,7 @@ public class OrderServiceImpl implements OrderService {
     private final SubscriptionServiceClient subscriptionServiceClient;
     private final ProductCatalogServiceClient productCatalogServiceClient;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final ObjectMapper objectMapper;
     private final OrderMapper orderMapper = org.mapstruct.factory.Mappers.getMapper(OrderMapper.class);
 
     @Override
@@ -116,6 +118,39 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse createAddonOrder(AddonRequest request) {
         log.info("Creating addon order for subscription: {}", request.getSubscriptionId());
+
+        // 1. Fetch subscription details to get the current tariffCode
+        SubscriptionDto subscription = subscriptionServiceClient.getSubscription(request.getSubscriptionId());
+        if (subscription == null) {
+            throw new ResourceNotFoundException("Subscription not found: " + request.getSubscriptionId());
+        }
+        String tariffCode = subscription.getTariffCode();
+
+        // 2. Fetch allowed addons for this tariff
+        String addonsJsonResponse = productCatalogServiceClient.getActiveAddons(tariffCode, 0, 100);
+        boolean isValidAddon = false;
+        
+        if (addonsJsonResponse != null && !addonsJsonResponse.isBlank()) {
+            try {
+                com.fasterxml.jackson.databind.JsonNode addonsResponse = objectMapper.readTree(addonsJsonResponse);
+                if (addonsResponse.has("content")) {
+                    for (com.fasterxml.jackson.databind.JsonNode node : addonsResponse.get("content")) {
+                        if (node.has("code") && request.getAddonCode().equals(node.get("code").asText())) {
+                            isValidAddon = true;
+                            break;
+                        }
+                    }
+                }
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                log.error("Failed to parse addons response for tariff {}: {}", tariffCode, e.getMessage());
+            }
+        }
+        
+        // 3. Validate
+        if (!isValidAddon) {
+            log.warn("Validation failed: Addon {} is not compatible with tariff {}", request.getAddonCode(), tariffCode);
+            throw new com.telcox.common.core.exception.BusinessRuleException("The requested addon " + request.getAddonCode() + " is not compatible with the subscriber's current tariff " + tariffCode);
+        }
 
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
