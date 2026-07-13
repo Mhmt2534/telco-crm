@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface TariffAddonRepository extends JpaRepository<TariffAddon, TariffAddonId> {
     List<TariffAddon> findByTariffId(Long tariffId);
+    List<TariffAddon> findByAddonId(Long addonId);
 }

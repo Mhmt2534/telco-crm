@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface SagaStateRepository extends JpaRepository<SagaState, Long> {
     Optional<SagaState> findBySagaId(String sagaId);
     Optional<SagaState> findByOrderId(Long orderId);
+    java.util.List<SagaState> findByLastUpdatedBeforeAndStatusIn(java.time.OffsetDateTime lastUpdated, java.util.List<com.telcox.springmicroservices.orderservice.domain.enums.SagaStatus> statuses);
 }

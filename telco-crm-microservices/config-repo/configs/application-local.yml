@@ -19,3 +19,7 @@ management:
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://host.minikube.internal:9411/api/v2/spans}
+
+app:
+  minio:
+    endpoint: http://localhost:19000
