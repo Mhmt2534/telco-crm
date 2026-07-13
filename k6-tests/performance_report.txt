@@ -1,0 +1,6 @@
+KART 29 Performance Test Report
+Date: 2026-07-11 19:51:14
+Total Subscribers Billed: 1000
+Database Invoicing Duration: 43.56 seconds
+Total Duration (incl. Kafka + PDF + MinIO): 50.00 seconds
+Result: PASS
