@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class MinioConfig {
 
-    @Value("${app.minio.endpoint:http://telco-minio:9000}")
+    @Value("${app.minio.endpoint:http://telco-minio:19000}")
     private String endpoint;
 
     @Value("${app.minio.access-key:minioadmin}")

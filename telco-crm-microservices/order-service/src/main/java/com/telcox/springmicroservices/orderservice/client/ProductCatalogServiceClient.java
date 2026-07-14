@@ -18,4 +18,11 @@ public interface ProductCatalogServiceClient {
 
     @GetMapping("/api/v1/products/batch")
     List<ProductDto> getProductsByCodes(@RequestParam("codes") List<String> productCodes);
+
+    @GetMapping("/api/v1/addons")
+    String getActiveAddons(
+            @RequestParam(value = "tariffCode", required = false) String tariffCode,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "100") int size
+    );
 }

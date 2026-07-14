@@ -14,6 +14,11 @@ spring:
         group:
           enabled: true
 
+app:
+  saga:
+    stuck-job-cron: "0 */5 * * * *"
+    stuck-threshold-minutes: 5
+
 resilience4j:
   circuitbreaker:
     instances:
@@ -23,6 +28,11 @@ resilience4j:
         ignoreExceptions:
           - com.telcox.common.core.exception.ResourceNotFoundException
       product-catalog-service:
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 10
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
+      subscription-service:
         failureRateThreshold: 50
         minimumNumberOfCalls: 10
         ignoreExceptions:
@@ -43,9 +53,18 @@ resilience4j:
         ignoreExceptions:
           - com.telcox.common.core.exception.ResourceNotFoundException
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+      subscription-service:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        ignoreExceptions:
+          - com.telcox.common.core.exception.ResourceNotFoundException
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
   timelimiter:
     instances:
       customer-service:
         timeoutDuration: 3s
       product-catalog-service:
+        timeoutDuration: 3s
+      subscription-service:
         timeoutDuration: 3s

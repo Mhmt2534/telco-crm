@@ -43,7 +43,22 @@ public class AddonService {
         addon.setVersion(1);
         addon.setStatus(CatalogStatus.ACTIVE);
 
-        return addonRepository.save(addon);
+        Addon savedAddon = addonRepository.save(addon);
+
+        for (String tariffCode : request.tariffCodes()) {
+            Tariff activeTariff = tariffRepository.findByCodeAndStatus(tariffCode, CatalogStatus.ACTIVE)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif tarife bulunamadı: " + tariffCode));
+            
+            TariffAddonId id = new TariffAddonId(activeTariff.getId(), savedAddon.getId());
+            TariffAddon tariffAddon = TariffAddon.builder()
+                    .id(id)
+                    .tariff(activeTariff)
+                    .addon(savedAddon)
+                    .build();
+            tariffAddonRepository.save(tariffAddon);
+        }
+
+        return savedAddon;
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +112,36 @@ public class AddonService {
         newAddon.setVersion(activeAddon.getVersion() + 1);
         newAddon.setStatus(CatalogStatus.ACTIVE);
         
-        return addonRepository.save(newAddon);
+        Addon savedNewAddon = addonRepository.save(newAddon);
+
+        List<TariffAddon> oldRelations = tariffAddonRepository.findByAddonId(activeAddon.getId());
+        List<String> oldTariffCodes = oldRelations.stream().map(r -> r.getTariff().getCode()).toList();
+
+        for (TariffAddon oldRelation : oldRelations) {
+            TariffAddonId newId = new TariffAddonId(oldRelation.getTariff().getId(), savedNewAddon.getId());
+            TariffAddon newTariffAddon = TariffAddon.builder()
+                    .id(newId)
+                    .tariff(oldRelation.getTariff())
+                    .addon(savedNewAddon)
+                    .build();
+            tariffAddonRepository.save(newTariffAddon);
+        }
+
+        for (String tariffCode : request.tariffCodes()) {
+            if (!oldTariffCodes.contains(tariffCode)) {
+                Tariff activeTariff = tariffRepository.findByCodeAndStatus(tariffCode, CatalogStatus.ACTIVE)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif tarife bulunamadı: " + tariffCode));
+                TariffAddonId id = new TariffAddonId(activeTariff.getId(), savedNewAddon.getId());
+                TariffAddon newTariffAddon = TariffAddon.builder()
+                        .id(id)
+                        .tariff(activeTariff)
+                        .addon(savedNewAddon)
+                        .build();
+                tariffAddonRepository.save(newTariffAddon);
+            }
+        }
+
+        return savedNewAddon;
     }
 
     @Transactional

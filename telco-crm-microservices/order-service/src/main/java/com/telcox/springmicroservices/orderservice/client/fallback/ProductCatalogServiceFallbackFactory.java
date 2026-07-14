@@ -35,6 +35,12 @@ public class ProductCatalogServiceFallbackFactory implements FallbackFactory<Pro
                 log.error("Product catalog service is unavailable for productCodes: {}. Cause: {}", productCodes, cause.getMessage());
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Product catalog service is currently unavailable");
             }
+
+            @Override
+            public String getActiveAddons(String tariffCode, int page, int size) {
+                log.error("Product catalog service is unavailable for getting addons by tariffCode: {}. Cause: {}", tariffCode, cause.getMessage());
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Product catalog service is currently unavailable");
+            }
         };
     }
 }

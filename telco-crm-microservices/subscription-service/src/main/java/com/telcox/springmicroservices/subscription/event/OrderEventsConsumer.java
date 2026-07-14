@@ -80,21 +80,31 @@ public class OrderEventsConsumer {
             log.info("Processing OrderConfirmed for customer: {}", event.getCustomerId());
 
             if (event.getTariffCode() == null || event.getTariffCode().isEmpty()) {
-                log.warn("OrderConfirmed payload missing tariffCode! Cannot create subscription.");
+                log.warn("OrderConfirmed payload missing tariffCode! Cannot process order.");
                 return;
             }
 
-            CreateSubscriptionRequest request = new CreateSubscriptionRequest(
-                    event.getCustomerId(),
-                    event.getTariffCode(),
-                    event.getOrderId());
-            
-            try {
-                subscriptionService.createSubscription(request);
-                log.info("Successfully created subscription for OrderConfirmed event.");
-            } catch (Exception createEx) {
-                log.error("Failed to create subscription for OrderId: {}. Publishing ActivationFailed event.", request.orderId(), createEx);
-                subscriptionService.publishActivationFailedEvent(request.orderId(), createEx.getMessage());
+            if ("ADDON".equals(event.getProductType())) {
+                try {
+                    subscriptionService.addAddonToSubscription(event);
+                    log.info("Successfully processed ADDON order for OrderConfirmed event.");
+                } catch (Exception ex) {
+                    log.error("Failed to process ADDON for OrderId: {}. Publishing ActivationFailed event.", event.getOrderId(), ex);
+                    subscriptionService.publishActivationFailedEvent(event.getOrderId(), ex.getMessage());
+                }
+            } else {
+                CreateSubscriptionRequest request = new CreateSubscriptionRequest(
+                        event.getCustomerId(),
+                        event.getTariffCode(),
+                        event.getOrderId());
+                
+                try {
+                    subscriptionService.createSubscription(request);
+                    log.info("Successfully created subscription for OrderConfirmed event.");
+                } catch (Exception createEx) {
+                    log.error("Failed to create subscription for OrderId: {}. Publishing ActivationFailed event.", request.orderId(), createEx);
+                    subscriptionService.publishActivationFailedEvent(request.orderId(), createEx.getMessage());
+                }
             }
 
         } catch (Exception ex) {

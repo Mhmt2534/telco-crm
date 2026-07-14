@@ -68,6 +68,8 @@ public class SubscriptionEventsConsumer {
             if (eventType == null) {
                 if (afterNode.has("reason")) {
                     eventType = "SubscriptionActivationFailed";
+                } else if (afterNode.has("addonCode")) {
+                    eventType = "AddonActivated";
                 } else if (afterNode.has("orderId")) {
                     eventType = "SubscriptionActivated";
                 }
@@ -77,7 +79,7 @@ public class SubscriptionEventsConsumer {
 
             if ("SubscriptionActivationFailed".equals(eventType)) {
                 handleSubscriptionActivationFailed(targetPayloadStr);
-            } else if ("SubscriptionActivated".equals(eventType)) {
+            } else if ("SubscriptionActivated".equals(eventType) || "AddonActivated".equals(eventType)) {
                 handleSubscriptionActivated(targetPayloadStr);
             } else {
                 log.warn("Could not determine event type for message, skipping: {}", message);

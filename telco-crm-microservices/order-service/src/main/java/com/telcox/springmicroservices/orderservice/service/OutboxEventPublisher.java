@@ -29,6 +29,9 @@ public class OutboxEventPublisher {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("orderId", order.getId());
             payload.put("customerId", order.getCustomerId());
+            if (order.getSubscriptionId() != null) {
+                payload.put("subscriptionId", order.getSubscriptionId().toString());
+            }
             payload.put("totalAmount", order.getTotalAmount());
             payload.put("currency", order.getCurrency());
             
@@ -60,6 +63,36 @@ public class OutboxEventPublisher {
     }
 
     @Transactional
+    public void publishTariffChangeRequested(Order order, String oldTariffCode, String newTariffCode, java.math.BigDecimal priceDiff) {
+        try {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("orderId", order.getId());
+            payload.put("customerId", order.getCustomerId());
+            if (order.getSubscriptionId() != null) {
+                payload.put("subscriptionId", order.getSubscriptionId().toString());
+            }
+            payload.put("oldTariffCode", oldTariffCode);
+            payload.put("newTariffCode", newTariffCode);
+            payload.put("priceDiff", priceDiff);
+            payload.put("effectiveBillCycle", "NEXT_CYCLE");
+            payload.put("occurredAt", Instant.now().toString());
+
+            OutboxEvent event = OutboxEvent.builder()
+                    .aggregateType("Subscription")
+                    .aggregateId(order.getSubscriptionId() != null ? order.getSubscriptionId().toString() : order.getId().toString())
+                    .eventType("TariffChangeRequested")
+                    .payload(objectMapper.valueToTree(payload))
+                    .build();
+
+            outboxEventRepository.save(event);
+            log.info("TariffChangeRequested event published to outbox for order ID: {}", order.getId());
+        } catch (Exception e) {
+            log.error("Failed to serialize TariffChangeRequested event payload", e);
+            throw new RuntimeException("Error processing JSON for outbox event", e);
+        }
+    }
+
+    @Transactional
     public void publishOrderConfirmed(Order order) {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -68,11 +101,22 @@ public class OutboxEventPublisher {
             payload.put("customerId", order.getCustomerId());
             
             String tariffCode = null;
+            String productType = null;
             if (order.getItems() != null && !order.getItems().isEmpty()) {
-                tariffCode = order.getItems().iterator().next().getProductCode();
+                var firstItem = order.getItems().iterator().next();
+                tariffCode = firstItem.getProductCode();
+                if (firstItem.getProductType() != null) {
+                    productType = firstItem.getProductType().name();
+                }
             }
             if (tariffCode != null) {
                 payload.put("tariffCode", tariffCode);
+            }
+            if (productType != null) {
+                payload.put("productType", productType);
+            }
+            if (order.getSubscriptionId() != null) {
+                payload.put("subscriptionId", order.getSubscriptionId().toString());
             }
             
             payload.put("occurredAt", Instant.now().toString());
