@@ -24,6 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import java.time.Duration;
+import com.telcox.springmicroservices.subscription.dto.TariffChangeRequestedEvent;
+
 @Service
 public class SubscriptionService {
 
@@ -34,17 +39,20 @@ public class SubscriptionService {
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
     private final SubscriptionAddonRepository subscriptionAddonRepository;
+    private final RedissonClient redissonClient;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
             MsisdnAllocationService msisdnAllocationService,
             OutboxEventRepository outboxEventRepository,
             ObjectMapper objectMapper,
-            SubscriptionAddonRepository subscriptionAddonRepository) {
+            SubscriptionAddonRepository subscriptionAddonRepository,
+            RedissonClient redissonClient) {
         this.subscriptionRepository = subscriptionRepository;
         this.msisdnAllocationService = msisdnAllocationService;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
         this.subscriptionAddonRepository = subscriptionAddonRepository;
+        this.redissonClient = redissonClient;
     }
 
     /**
@@ -269,5 +277,32 @@ public class SubscriptionService {
         } catch (Exception e) {
             throw new RuntimeException("AddonActivated event'i outbox'a yazılamadı", e);
         }
+    }
+
+    @Transactional
+    public void changeTariff(TariffChangeRequestedEvent event) {
+        log.info("[SUBSCRIPTION] Tarife değişikliği işleniyor. OrderId: {}, SubscriptionId: {}", event.getOrderId(), event.getSubscriptionId());
+
+        if (event.getSubscriptionId() == null || event.getOrderId() == null) {
+            throw new IllegalArgumentException("Tarife değişikliği için subscriptionId ve orderId boş olamaz.");
+        }
+
+        String idempotencyKey = "idempotency:tariff_change:" + event.getSubscriptionId() + ":" + event.getOrderId();
+        RBucket<Boolean> bucket = redissonClient.getBucket(idempotencyKey);
+        
+        boolean isFirstProcess = bucket.setIfAbsent(true, Duration.ofDays(7));
+        if (!isFirstProcess) {
+            log.info("[SUBSCRIPTION] Tarife değişikliği daha önce işlenmiş (Idempotent). İşlem atlanıyor. OrderId: {}", event.getOrderId());
+            return;
+        }
+
+        Subscription subscription = subscriptionRepository.findById(event.getSubscriptionId())
+                .orElseThrow(() -> new IllegalArgumentException("Abonelik bulunamadı: " + event.getSubscriptionId()));
+
+        log.info("[SUBSCRIPTION] Abonelik bulundu. Mevcut tarife: {}, Yeni tarife: {}", subscription.getTariffCode(), event.getNewTariffCode());
+        subscription.setTariffCode(event.getNewTariffCode());
+        subscriptionRepository.save(subscription);
+
+        log.info("[SUBSCRIPTION] Tarife başarıyla güncellendi. OrderId: {}", event.getOrderId());
     }
 }
