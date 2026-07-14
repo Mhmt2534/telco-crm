@@ -1065,6 +1065,105 @@ Aşağıda, junior yazılımcıların kafasında hiçbir soru işareti bırakmay
 
 
 
+### KART 25.1: [SUBSCRIPTION] Tarife Değişikliği Event Tüketicisi (Consumer)
+
+* **Açıklama:** `order-service` tarafından üretilen `TariffChangeRequested` event'inin `subscription-service` tarafında dinlenip abonenin aktif tarifesinin güncellenmesi.
+
+
+* **Atanan Kişi:** Mahmut · Core Flow
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 25
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] `subscription-service` içindeki mevcut `OrderEventsConsumer` sınıfına (veya ayrı bir consumer'a) `TariffChangeRequested` event'ini dinleyen yeni bir `@KafkaListener` metodu eklenmeli. Event kontratı: `orderId`, `subscriptionId`, `oldTariffCode`, `newTariffCode`, `priceDiff`, `effectiveBillCycle`, `customerId`, `occurredAt`.
+
+
+* [ ]  Event geldiğinde `subscription_db` üzerindeki `Subscription.tariffCode` alanı `newTariffCode` ile güncellenmeli (kendi DB'sinde, tek transaction).
+
+
+* [ ]  Consumer idempotent olmalı: aynı `orderId` için event iki kez işlenirse `tariffCode` ikinci kez de aynı değere set edilmeli, yan etkiye (örn. loglama/sayaç) yol açmamalı — bunun için `processed_event` (event/order id bazlı) tablosu ya da benzeri bir mekanizma kullanılmalı.
+
+
+* [ ]  Consumer hata fırlatırsa (subscription bulunamadı vb.) mesaj DLQ'ya (dead-letter) düşmeli, sonsuz retry döngüsüne girmemeli.
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka (`@KafkaListener`), Spring Data JPA, PostgreSQL 17
+
+
+### KART 25.2: [USAGE] Tarife Değişikliği Sonrası Kota Güncelleme Tüketicisi
+
+* **Açıklama:** Tarife değişikliğinde eski kota kaydının kapatılıp yeni tarifeye göre kota tanımının `usage-service` tarafında oluşturulması.
+
+
+* **Atanan Kişi:** Mahmut · Core Flow
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 25
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] `usage-service` içine TariffChangeRequested event'ini dinleyen yeni bir `@KafkaListener` (yeni bir consumer sınıfı, örn. `TariffChangeConsumer`) eklenmeli.
+
+
+* [ ]  Event geldiğinde `usage_db` üzerindeki mevcut aktif `Quota` kaydı kapatılmalı (`periodEnd/status` güncellenerek); yeni `newTariffCode` için `product-catalog-service`'ten (`Feign, Resilience4j` ile) `minutesIncluded/smsIncluded/dataMbIncluded` değerleri okunup yeni bir `Quota` kaydı açılmalı. Bu iki işlem tek transaction içinde olmalı.
+
+
+* [ ]  `effectiveBillCycle` alanı `NEXT_CYCLE` ise yeni kotanın `periodStart` değeri bir sonraki fatura döngüsünün başlangıcına göre ayarlanmalı (aynı gün aktif olmamalı) — bu iş kuralı netleştirilip koda yansıtılmalı.
+
+
+* [ ]  Consumer idempotent olmalı (aynı event iki kez gelirse iki kez yeni `Quota` açılmamalı).
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, OpenFeign, Resilience4j, Spring Data JPA
+
+
+
+### KART 25.3: [BILLING] Tarife Farkının Bir Sonraki Faturaya Yansıtılması
+
+* **Açıklama:** Tarife değişikliğinden doğan fiyat farkının (`priceDiff`) bir sonraki fatura kesim döneminde `billing-service` tarafından fatura kalemine (`InvoiceLine`) dönüştürülmesi.
+
+
+* **Atanan Kişi:** Osman · Finans
+
+
+* **Öncelik:** Yüksek
+
+
+* **Bağımlılık:** KART 25
+
+
+* **Kabul Kriterleri (Checklist):**
+* [ ] `billing-service` içine `TariffChangeRequested` event'ini dinleyen yeni bir consumer eklenmeli (mevcut `SubscriptionActivatedConsumer/PaymentEventsConsumer/InvoiceGeneratedConsumer` sınıflarının yanına, ayrı bir `TariffChangeConsumer` olarak)
+
+
+* [ ]  Event geldiğinde `priceDiff` ve `effectiveBillCycle` bilgisiyle bekleyen bir "pending charge" / `InvoiceLine` ön-kaydı `billing_db`'ye yazılmalı; `priceDiff` negatif ise (tarife düşürme/downgrade senaryosu) bu bir kredi/indirim kalemi olarak işlenmeli, hata fırlatılmamalı.
+
+
+* [ ]  Bill-run job'ı (KART 27'deki mevcut mekanizma ile tutarlı şekilde) çalıştığında bu bekleyen kalemi ilgili döngünün faturasına otomatik dahil etmeli; `effectiveBillCycle=NEXT_CYCLE` ise mevcut değil bir sonraki fatura kesiminde işlenmeli.
+
+
+* [ ]  Aynı `orderId/event` için birden fazla `InvoiceLine` oluşmaması adına consumer idempotent yazılmalı.
+
+
+
+
+* **Kullanılacak Teknolojiler:** Spring Kafka, Spring Data JPA, Java BigDecimal API
+
+
+
+
 ### KART 26: [TEST] Order ↔ Payment Servisleri Arası Sözleşme (Contract) Testleri
 
 * **Açıklama:** İki servis arasındaki event şemalarından biri değiştiğinde sistemin derleme anında patlayarak hatayı önceden yakalamasını sağlayan koruma testleri.
