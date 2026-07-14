@@ -8,6 +8,8 @@ import com.telcox.common.persistence.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 /**
  * Bir aboneliğin aktif fatura dönemi kota sayacı.
@@ -20,8 +22,12 @@ import jakarta.persistence.Table;
 @Table(name = "quotas")
 public class Quota extends BaseEntity {
 
-    @Column(name = "subscription_id", nullable = false, unique = true)
+    @Column(name = "subscription_id", nullable = false)
     private UUID subscriptionId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private QuotaStatus status = QuotaStatus.ACTIVE;
 
     // ── Dönem bilgisi ─────────────────────────────────────────
     @Column(name = "period_start", nullable = false)
@@ -57,23 +63,37 @@ public class Quota extends BaseEntity {
                  OffsetDateTime periodEnd,
                  Integer totalMinutes,
                  Integer totalSms,
-                 Long totalMb) {
+                 Long totalMb,
+                 QuotaStatus status) {
         this.subscriptionId   = subscriptionId;
         this.periodStart      = periodStart;
         this.periodEnd        = periodEnd;
         this.totalMinutes     = totalMinutes;
         this.totalSms         = totalSms;
         this.totalMb          = totalMb;
+        this.status           = status != null ? status : QuotaStatus.ACTIVE;
         // Başlangıçta kalan = toplam
         this.minutesRemaining = totalMinutes;
         this.smsRemaining     = totalSms;
         this.mbRemaining      = totalMb;
     }
 
+    public Quota(UUID subscriptionId,
+                 OffsetDateTime periodStart,
+                 OffsetDateTime periodEnd,
+                 Integer totalMinutes,
+                 Integer totalSms,
+                 Long totalMb) {
+        this(subscriptionId, periodStart, periodEnd, totalMinutes, totalSms, totalMb, QuotaStatus.ACTIVE);
+    }
+
     // ── Getters / Setters ─────────────────────────────────────
 
     public UUID getSubscriptionId()                        { return subscriptionId; }
     public void setSubscriptionId(UUID subscriptionId)     { this.subscriptionId = subscriptionId; }
+
+    public QuotaStatus getStatus()                         { return status; }
+    public void setStatus(QuotaStatus status)              { this.status = status; }
 
     public OffsetDateTime getPeriodStart()                 { return periodStart; }
     public void setPeriodStart(OffsetDateTime periodStart) { this.periodStart = periodStart; }

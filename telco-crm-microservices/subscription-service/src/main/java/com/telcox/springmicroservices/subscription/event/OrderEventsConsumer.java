@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.telcox.springmicroservices.subscription.dto.CreateSubscriptionRequest;
 import com.telcox.springmicroservices.subscription.dto.OrderConfirmedEvent;
+import com.telcox.springmicroservices.subscription.dto.TariffChangeRequestedEvent;
 import com.telcox.springmicroservices.subscription.service.SubscriptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +110,61 @@ public class OrderEventsConsumer {
 
         } catch (Exception ex) {
             log.error("Failed to process OrderConfirmed Kafka message: {}", message, ex);
+        }
+    }
+
+    @KafkaListener(topics = "telcox.Subscription.events", groupId = "subscription-service-group")
+    public void consumeSubscriptionEvents(String message,
+            @org.springframework.messaging.handler.annotation.Header(name = "eventType", required = false) String eventTypeHeader) {
+        log.info("Received raw event message from telcox.Subscription.events: {} | Header eventType: {}", message,
+                eventTypeHeader);
+        String jsonPayload = message;
+
+        try {
+            JsonNode parsedNode = objectMapper.readTree(message);
+            if (parsedNode.isTextual()) {
+                jsonPayload = parsedNode.asText();
+            }
+        } catch (Exception e) {
+            log.debug("Message is not a JSON TextNode, treating as raw JSON.");
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(jsonPayload);
+            JsonNode payloadNode = root.has("payload") ? root.get("payload") : root;
+            JsonNode afterNode = payloadNode.has("after") ? payloadNode.get("after") : payloadNode;
+
+            String eventType = eventTypeHeader != null ? eventTypeHeader : "";
+
+            if (eventType.isEmpty()) {
+                if (afterNode.has("event_type")) {
+                    eventType = afterNode.get("event_type").asText();
+                } else if (afterNode.has("oldTariffCode") && afterNode.has("newTariffCode")) {
+                    eventType = "TariffChangeRequested";
+                }
+            }
+
+            if ("TariffChangeRequested".equals(eventType)) {
+                String payloadStr = "";
+                if (afterNode.has("payload")) {
+                    JsonNode innerPayload = afterNode.get("payload");
+                    payloadStr = innerPayload.isTextual() ? innerPayload.asText() : innerPayload.toString();
+                } else {
+                    payloadStr = afterNode.toString();
+                }
+
+                TariffChangeRequestedEvent event = objectMapper.readValue(payloadStr, TariffChangeRequestedEvent.class);
+                log.info("Processing TariffChangeRequested for subscription: {}", event.getSubscriptionId());
+                subscriptionService.changeTariff(event);
+            } else if (eventType.isEmpty()) {
+                log.warn("Could not determine event type for message, skipping: {}", message);
+            } else {
+                log.info("Ignoring event type outside subscription-service's interest (eventType={}), raw payload: {}", eventType, jsonPayload);
+            }
+
+        } catch (Exception ex) {
+            log.error("Failed to process telcox.Subscription.events Kafka message: {}", message, ex);
+            throw new RuntimeException("Failed to process event: " + message, ex); // Throw exception to trigger DLQ
         }
     }
 }
