@@ -16,6 +16,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import com.telcox.springmicroservices.usage.dto.TariffChangeRequestedEvent;
+import com.telcox.springmicroservices.usage.dto.TariffDto;
+import com.telcox.springmicroservices.usage.client.ProductCatalogServiceClient;
+import com.telcox.springmicroservices.usage.entity.QuotaStatus;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +40,21 @@ public class QuotaService {
     private final UsageRecordRepository usageRecordRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final ProductCatalogServiceClient productCatalogServiceClient;
+    private final RedissonClient redissonClient;
 
     public QuotaService(QuotaRepository quotaRepository,
                         UsageRecordRepository usageRecordRepository,
                         OutboxEventRepository outboxEventRepository,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper,
+                        ProductCatalogServiceClient productCatalogServiceClient,
+                        RedissonClient redissonClient) {
         this.quotaRepository = quotaRepository;
         this.usageRecordRepository = usageRecordRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
+        this.productCatalogServiceClient = productCatalogServiceClient;
+        this.redissonClient = redissonClient;
     }
 
     /**
@@ -48,7 +63,7 @@ public class QuotaService {
      */
     @Transactional(readOnly = true)
     public QuotaResponse getQuotaBySubscriptionId(UUID subscriptionId) {
-        Quota quota = quotaRepository.findBySubscriptionId(subscriptionId)
+        Quota quota = quotaRepository.findBySubscriptionIdAndStatus(subscriptionId, QuotaStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Kota bulunamadı. SubscriptionId: " + subscriptionId));
 
@@ -67,8 +82,8 @@ public class QuotaService {
         }
 
         // Abonenin kotasını bul
-        Quota quota = quotaRepository.findBySubscriptionId(event.getSubscriptionId())
-                .orElseThrow(() -> new IllegalArgumentException("Kota bulunamadı. SubscriptionId: " + event.getSubscriptionId()));
+        Quota quota = quotaRepository.findBySubscriptionIdAndStatus(event.getSubscriptionId(), QuotaStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("Abonelik için aktif kota bulunamadı: " + event.getSubscriptionId()));
 
         // Tüketimi düş ve aşım (overage) miktarını hesapla
         UsageType type = UsageType.valueOf(event.getType());
@@ -231,5 +246,71 @@ public class QuotaService {
         r.setMbRemaining(q.getMbRemaining());
         r.setMbUsagePercent(q.mbUsagePercent());
         return r;
+    }
+    @Transactional
+    public void processTariffChange(TariffChangeRequestedEvent event) {
+        log.info("[USAGE] Tarife değişikliği işleniyor. OrderId: {}", event.getOrderId());
+
+        if (event.getOrderId() == null || event.getSubscriptionId() == null || event.getNewTariffCode() == null) {
+            throw new IllegalArgumentException("Tarife değişikliği için gerekli alanlar eksik.");
+        }
+
+        String idempotencyKey = "idempotency:quota_change:" + event.getOrderId();
+        RBucket<Boolean> bucket = redissonClient.getBucket(idempotencyKey);
+
+        boolean isFirstProcess = bucket.setIfAbsent(true, Duration.ofDays(7));
+        if (!isFirstProcess) {
+            log.info("[USAGE] Tarife değişikliği daha önce işlenmiş (Idempotent). İşlem atlanıyor. OrderId: {}", event.getOrderId());
+            return;
+        }
+
+        try {
+            Quota activeQuota = quotaRepository.findBySubscriptionIdAndStatus(event.getSubscriptionId(), QuotaStatus.ACTIVE)
+                    .orElseThrow(() -> new IllegalArgumentException("Abonelik için aktif kota bulunamadı: " + event.getSubscriptionId()));
+
+            TariffDto newTariff = productCatalogServiceClient.getTariffByCode(event.getNewTariffCode());
+            if (newTariff == null) {
+                throw new RuntimeException("Yeni tarife bilgisi alınamadı: " + event.getNewTariffCode());
+            }
+
+            OffsetDateTime now = OffsetDateTime.now();
+            OffsetDateTime periodStart;
+            OffsetDateTime periodEnd;
+            QuotaStatus newStatus;
+
+            if (!"NEXT_CYCLE".equals(event.getEffectiveBillCycle())) {
+                // IMMEDIATE change
+                activeQuota.setPeriodEnd(now);
+                quotaRepository.save(activeQuota);
+
+                periodStart = now;
+                periodEnd = now.plusMonths(1);
+                newStatus = QuotaStatus.ACTIVE;
+                log.info("[USAGE] Tarife hemen aktif ediliyor. OrderId: {}", event.getOrderId());
+            } else {
+                // NEXT_CYCLE change
+                periodStart = activeQuota.getPeriodEnd();
+                periodEnd = periodStart.plusMonths(1);
+                newStatus = QuotaStatus.PENDING;
+                log.info("[USAGE] Tarife bir sonraki dönemde aktif edilecek. OrderId: {}", event.getOrderId());
+            }
+
+            Quota newQuota = new Quota(
+                    event.getSubscriptionId(),
+                    periodStart,
+                    periodEnd,
+                    newTariff.getMinutesIncluded(),
+                    newTariff.getSmsIncluded(),
+                    newTariff.getDataMbIncluded(),
+                    newStatus
+            );
+
+            quotaRepository.save(newQuota);
+            log.info("[USAGE] Yeni kota kaydı başarıyla oluşturuldu. OrderId: {}, Status: {}", event.getOrderId(), newStatus);
+        } catch (Exception ex) {
+            log.error("[USAGE] Tarife değişikliği işlenirken hata oluştu. OrderId: {}. Idempotency kilidi siliniyor.", event.getOrderId(), ex);
+            bucket.delete();
+            throw ex;
+        }
     }
 }
