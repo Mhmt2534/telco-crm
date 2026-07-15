@@ -20,7 +20,12 @@ public class SecurityConfig {
                         .pathMatchers("/api/v1/auth/staff/login", 
                                       "/api/v1/auth/customer/request-otp", 
                                       "/api/v1/auth/customer/verify-otp", 
-                                      "/actuator/**").permitAll()
+                                      "/actuator/**",
+                                      "/swagger-ui.html",
+                                      "/swagger-ui/**",
+                                      "/v3/api-docs/**",
+                                      "/*/v3/api-docs/**",
+                                      "/webjars/**").permitAll()
                         // All other endpoints require authentication
                         .anyExchange().authenticated()
                 )

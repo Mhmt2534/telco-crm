@@ -3,3 +3,27 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus,gateway
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: identity
+        url: /identity-service/v3/api-docs
+      - name: customer
+        url: /customer-service/v3/api-docs
+      - name: product-catalog
+        url: /product-catalog-service/v3/api-docs
+      - name: order
+        url: /order-service/v3/api-docs
+      - name: subscription
+        url: /subscription-service/v3/api-docs
+      - name: usage
+        url: /usage-service/v3/api-docs
+      - name: billing
+        url: /billing-service/v3/api-docs
+      - name: payment
+        url: /payment-service/v3/api-docs
+      - name: notification
+        url: /notification-service/v3/api-docs
+      - name: ticket
+        url: /ticket-service/v3/api-docs
