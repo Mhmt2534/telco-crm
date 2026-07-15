@@ -19,7 +19,8 @@ public class SecurityConfig {
                         // Public endpoints: OTP request/verify, Staff login, and actuator for monitoring
                         .pathMatchers("/api/v1/auth/staff/login", 
                                       "/api/v1/auth/customer/request-otp", 
-                                      "/api/v1/auth/customer/verify-otp", 
+                                      "/api/v1/auth/customer/verify-otp",
+                                      "/api/v1/auth/refresh",
                                       "/actuator/**",
                                       "/swagger-ui.html",
                                       "/swagger-ui/**",

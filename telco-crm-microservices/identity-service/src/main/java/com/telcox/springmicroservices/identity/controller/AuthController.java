@@ -4,6 +4,7 @@ import com.telcox.springmicroservices.identity.dto.*;
 import com.telcox.springmicroservices.identity.service.CustomerOtpService;
 import com.telcox.springmicroservices.identity.service.LogoutService;
 import com.telcox.springmicroservices.identity.service.StaffAuthService;
+import com.telcox.springmicroservices.identity.service.TokenRefreshService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,6 +38,7 @@ public class AuthController {
     private final StaffAuthService staffAuthService;
     private final CustomerOtpService customerOtpService;
     private final LogoutService logoutService;
+    private final TokenRefreshService tokenRefreshService;
 
     // ──────────────────────────────────────────────────────────────────────────
     // 1. Staff Login (Admin / Dealer)
@@ -158,7 +160,48 @@ public class AuthController {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 4. Logout
+    // 4. Token Refresh
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Refresh token kullanarak yeni bir access token alır.
+     *
+     * <pre>
+     * # Örnek istek:
+     * curl -X POST http://localhost:9001/api/v1/auth/refresh \
+     *   -H "Content-Type: application/json" \
+     *   -d '{"refreshToken":"eyJhbGci..."}'
+     *
+     * # Başarılı yanıt (200):
+     * {
+     *   "access_token": "eyJhbGci...",
+     *   "refresh_token": "eyJhbGci...",
+     *   "expires_in": 300,
+     *   "token_type": "Bearer"
+     * }
+     * </pre>
+     */
+    @Operation(
+        summary = "Token Yenileme",
+        description = "Geçerli bir refresh token ile Keycloak üzerinden yeni access token ve refresh token üretir."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Token başarıyla yenilendi",
+            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Geçersiz istek formatı"),
+        @ApiResponse(responseCode = "401", description = "Refresh token geçersiz veya süresi dolmuş")
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponse> refresh(
+            @Valid @RequestBody TokenRefreshRequest request) {
+
+        log.info("Token refresh request received");
+        TokenResponse token = tokenRefreshService.refresh(request.getRefreshToken());
+        return ResponseEntity.ok(token);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 5. Logout
     // ──────────────────────────────────────────────────────────────────────────
 
     /**
