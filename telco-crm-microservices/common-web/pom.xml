@@ -46,5 +46,13 @@
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
         </dependency>
+
+        <!-- OpenAPI (optional) — used by OpenApiGatewayServerConfig to set relative server URL.
+             Marked optional because the consuming service already declares this dependency. -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>

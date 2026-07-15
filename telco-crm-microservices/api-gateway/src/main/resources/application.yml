@@ -18,7 +18,78 @@ spring:
             locator:
               enabled: true
               lower-case-service-id: true
+              predicates:
+                - name: Path
+                  args:
+                    pattern: "'/'+serviceId+'/**'"
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: "'/' + serviceId + '/(?<remaining>.*)'"
+                    replacement: "'/${remaining}'"
           routes:
+            # ── OpenAPI doc routes (Swagger aggregation) ──
+            - id: identity-service-api-docs
+              uri: lb://identity-service
+              predicates:
+                - Path=/identity-service/v3/api-docs/**
+              filters:
+                - RewritePath=/identity-service/(?<remaining>.*), /${remaining}
+            - id: customer-service-api-docs
+              uri: lb://customer-service
+              predicates:
+                - Path=/customer-service/v3/api-docs/**
+              filters:
+                - RewritePath=/customer-service/(?<remaining>.*), /${remaining}
+            - id: product-catalog-service-api-docs
+              uri: lb://product-catalog-service
+              predicates:
+                - Path=/product-catalog-service/v3/api-docs/**
+              filters:
+                - RewritePath=/product-catalog-service/(?<remaining>.*), /${remaining}
+            - id: order-service-api-docs
+              uri: lb://order-service
+              predicates:
+                - Path=/order-service/v3/api-docs/**
+              filters:
+                - RewritePath=/order-service/(?<remaining>.*), /${remaining}
+            - id: subscription-service-api-docs
+              uri: lb://subscription-service
+              predicates:
+                - Path=/subscription-service/v3/api-docs/**
+              filters:
+                - RewritePath=/subscription-service/(?<remaining>.*), /${remaining}
+            - id: usage-service-api-docs
+              uri: lb://usage-service
+              predicates:
+                - Path=/usage-service/v3/api-docs/**
+              filters:
+                - RewritePath=/usage-service/(?<remaining>.*), /${remaining}
+            - id: billing-service-api-docs
+              uri: lb://billing-service
+              predicates:
+                - Path=/billing-service/v3/api-docs/**
+              filters:
+                - RewritePath=/billing-service/(?<remaining>.*), /${remaining}
+            - id: payment-service-api-docs
+              uri: lb://payment-service
+              predicates:
+                - Path=/payment-service/v3/api-docs/**
+              filters:
+                - RewritePath=/payment-service/(?<remaining>.*), /${remaining}
+            - id: notification-service-api-docs
+              uri: lb://notification-service
+              predicates:
+                - Path=/notification-service/v3/api-docs/**
+              filters:
+                - RewritePath=/notification-service/(?<remaining>.*), /${remaining}
+            - id: ticket-service-api-docs
+              uri: lb://ticket-service
+              predicates:
+                - Path=/ticket-service/v3/api-docs/**
+              filters:
+                - RewritePath=/ticket-service/(?<remaining>.*), /${remaining}
+            # ── Business API routes ──
             - id: identity-service
               uri: lb://identity-service
               predicates:
