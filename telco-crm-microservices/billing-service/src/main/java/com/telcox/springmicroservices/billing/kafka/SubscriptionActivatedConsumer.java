@@ -8,6 +8,7 @@ import com.telcox.springmicroservices.billing.repository.BillCycleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -27,8 +28,15 @@ public class SubscriptionActivatedConsumer {
     }
 
     @KafkaListener(topics = "telcox.Subscription.events", groupId = "billing-service-group")
-    public void consume(String message) {
-        log.info("Received raw Subscription event: {}", message);
+    public void consume(String message,
+                        @Header(name = "eventType", required = false) String eventType) {
+        log.info("Received raw Subscription event: {}, eventType header: {}", message, eventType);
+
+        if (!"SubscriptionActivated".equals(eventType)) {
+            log.info("Ignoring non-SubscriptionActivated event: eventType={}", eventType);
+            return;
+        }
+
         String jsonPayload = message;
 
         try {
@@ -44,27 +52,6 @@ public class SubscriptionActivatedConsumer {
             JsonNode root = objectMapper.readTree(jsonPayload);
             JsonNode payloadNode = root.has("payload") ? root.get("payload") : root;
             JsonNode afterNode = payloadNode.has("after") ? payloadNode.get("after") : payloadNode;
-
-            String eventType = "";
-            if (afterNode.has("event_type")) {
-                eventType = afterNode.get("event_type").asText();
-            } else if (afterNode.has("eventType")) {
-                eventType = afterNode.get("eventType").asText();
-            } else if (root.has("eventType")) {
-                eventType = root.get("eventType").asText();
-            }
-
-            // Fallback
-            if (eventType.isEmpty()) {
-                if (afterNode.has("tariffCode")) {
-                    eventType = "SubscriptionActivated";
-                }
-            }
-
-            if (!"SubscriptionActivated".equals(eventType)) {
-                log.debug("Skipping event type: {}", eventType);
-                return;
-            }
 
             String payloadStr = "";
             if (afterNode.has("payload")) {
