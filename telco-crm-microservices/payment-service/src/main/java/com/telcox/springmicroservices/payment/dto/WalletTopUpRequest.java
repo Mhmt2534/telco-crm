@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public class WalletTopUpRequest {
 
-    @NotNull(message = "Customer ID cannot be null")
     private UUID customerId;
 
     @NotNull(message = "Amount cannot be null")

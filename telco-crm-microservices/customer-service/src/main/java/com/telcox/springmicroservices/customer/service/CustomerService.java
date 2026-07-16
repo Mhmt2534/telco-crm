@@ -163,4 +163,21 @@ public class CustomerService {
                 .kycApproved(true)
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public com.telcox.common.core.model.CustomerIdentityResponse getCustomerIdentityByKeycloakUserId(
+            String keycloakUserId) {
+        Customer customer = customerRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Active customer identity mapping not found"));
+
+        if (customer.getStatus() != com.telcox.springmicroservices.customer.domain.enums.CustomerStatus.ACTIVE) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "Active customer identity mapping not found");
+        }
+
+        return new com.telcox.common.core.model.CustomerIdentityResponse(customer.getPublicId());
+    }
 }

@@ -61,6 +61,7 @@ public class Customer {
     @Builder.Default
     private CustomerStatus status = CustomerStatus.PENDING;
 
+    @Column(name = "keycloak_user_id", unique = true)
     private String keycloakUserId;
 
     private String internalKeycloakPassword;

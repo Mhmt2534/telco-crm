@@ -5,6 +5,7 @@ import com.telcox.springmicroservices.payment.dto.PaymentResponse;
 import com.telcox.springmicroservices.payment.dto.WalletBalanceResponse;
 import com.telcox.springmicroservices.payment.dto.WalletTopUpRequest;
 import com.telcox.springmicroservices.payment.service.PaymentService;
+import com.telcox.springmicroservices.payment.service.AuthenticatedCustomerResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,9 +30,12 @@ public class PaymentController {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
     private final PaymentService paymentService;
+    private final AuthenticatedCustomerResolver authenticatedCustomerResolver;
 
-    public PaymentController(PaymentService paymentService) {
+    public PaymentController(PaymentService paymentService,
+                             AuthenticatedCustomerResolver authenticatedCustomerResolver) {
         this.paymentService = paymentService;
+        this.authenticatedCustomerResolver = authenticatedCustomerResolver;
     }
 
     @PostMapping
@@ -48,7 +52,7 @@ public class PaymentController {
             @Parameter(description = "Idempotency key to prevent double charging", required = true)
             @RequestHeader(value = "Idempotency-Key") String idempotencyKey,
             @Parameter(description = "User ID propagated from API Gateway")
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Id") String userId,
             @Parameter(description = "Correlation ID propagated from API Gateway")
             @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
             @Valid @RequestBody PaymentRequest request) {
@@ -67,6 +71,7 @@ public class PaymentController {
 
             log.info("Received payment request for Invoice ID: {} with Idempotency-Key: {}", request.getInvoiceId(), idempotencyKey);
             
+            request.setCustomerId(authenticatedCustomerResolver.resolve(userId));
             PaymentResponse response = paymentService.initiatePayment(request, idempotencyKey, userId);
             return ResponseEntity.ok(response);
             
@@ -83,8 +88,10 @@ public class PaymentController {
             @RequestHeader(value = "X-User-Id") String userId,
             @Valid @RequestBody WalletTopUpRequest request) {
         
-        log.info("Received wallet top-up request for customer: {}, actor: {}, amount: {}", request.getCustomerId(), userId, request.getAmount());
-        WalletBalanceResponse response = paymentService.topUpWallet(request.getCustomerId(), request);
+        UUID customerId = authenticatedCustomerResolver.resolve(userId);
+        request.setCustomerId(customerId);
+        log.info("Received wallet top-up request for customer: {}, actor: {}, amount: {}", customerId, userId, request.getAmount());
+        WalletBalanceResponse response = paymentService.topUpWallet(customerId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -92,7 +99,14 @@ public class PaymentController {
     @Operation(summary = "Get customer wallet balance", description = "Retrieves the current balance of a customer's digital wallet")
     public ResponseEntity<WalletBalanceResponse> getWalletBalance(
             @Parameter(description = "Customer ID")
-            @PathVariable("customerId") UUID customerId) {
+            @PathVariable("customerId") UUID customerId,
+            @RequestHeader("X-User-Id") String userId) {
+        UUID authenticatedCustomerId = authenticatedCustomerResolver.resolve(userId);
+        if (!authenticatedCustomerId.equals(customerId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Wallet does not belong to the authenticated customer");
+        }
         
         log.info("Received wallet balance request for customer: {}", customerId);
         WalletBalanceResponse response = paymentService.getWalletBalance(customerId);

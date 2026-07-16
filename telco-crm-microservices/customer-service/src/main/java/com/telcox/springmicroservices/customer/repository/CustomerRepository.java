@@ -11,6 +11,7 @@ import java.util.UUID;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Optional<Customer> findByPhone(String phone);
     Optional<Customer> findByPublicId(UUID publicId);
+    Optional<Customer> findByKeycloakUserId(String keycloakUserId);
     Optional<Customer> findByIdentityNumber(String identityNumber);
     boolean existsByPhone(String phone);
     boolean existsByIdentityNumber(String identityNumber);

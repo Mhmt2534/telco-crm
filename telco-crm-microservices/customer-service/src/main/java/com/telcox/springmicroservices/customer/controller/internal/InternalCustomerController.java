@@ -1,6 +1,7 @@
 package com.telcox.springmicroservices.customer.controller.internal;
 
 import com.telcox.springmicroservices.customer.dto.InternalCustomerResponse;
+import com.telcox.common.core.model.CustomerIdentityResponse;
 import com.telcox.springmicroservices.customer.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,5 +21,11 @@ public class InternalCustomerController {
     public ResponseEntity<InternalCustomerResponse> getCustomerByPhone(@PathVariable String phone) {
         InternalCustomerResponse response = customerService.getInternalCustomerByPhone(phone);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/by-keycloak-id/{keycloakUserId}")
+    public ResponseEntity<CustomerIdentityResponse> getCustomerByKeycloakUserId(
+            @PathVariable String keycloakUserId) {
+        return ResponseEntity.ok(customerService.getCustomerIdentityByKeycloakUserId(keycloakUserId));
     }
 }

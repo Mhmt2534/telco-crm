@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
  */
 public record CreateSubscriptionRequest(
 
-                @NotNull(message = "Müşteri ID boş olamaz") UUID customerId,
+                UUID customerId,
 
                 @NotNull(message = "Tarife ID boş olamaz") UUID tariffId,
 

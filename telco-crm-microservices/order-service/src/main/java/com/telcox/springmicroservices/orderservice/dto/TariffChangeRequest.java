@@ -14,7 +14,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TariffChangeRequest {
     
-    @NotNull(message = "Customer ID cannot be null")
     private UUID customerId;
     
     @NotNull(message = "Subscription ID cannot be null")

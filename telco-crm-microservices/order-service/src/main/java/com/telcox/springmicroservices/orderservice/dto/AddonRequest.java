@@ -15,7 +15,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AddonRequest {
     
-    @NotNull(message = "Customer ID cannot be null")
     private UUID customerId;
     
     @NotNull(message = "Subscription ID cannot be null")

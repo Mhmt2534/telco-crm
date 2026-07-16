@@ -8,7 +8,6 @@ import java.util.UUID;
 
 public class PaymentRequest {
 
-    @NotNull(message = "Customer ID is required")
     private UUID customerId;
 
     @NotNull(message = "Invoice ID is required")

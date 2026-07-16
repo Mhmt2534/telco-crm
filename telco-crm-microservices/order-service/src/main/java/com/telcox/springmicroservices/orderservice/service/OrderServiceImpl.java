@@ -137,6 +137,7 @@ public class OrderServiceImpl implements OrderService {
         if (subscription == null) {
             throw new ResourceNotFoundException("Subscription not found: " + request.getSubscriptionId());
         }
+        assertSubscriptionOwnership(subscription, request.getCustomerId());
         UUID tariffId = subscription.getTariffId();
 
         // 2. Fetch allowed addons for this tariff
@@ -208,6 +209,7 @@ public class OrderServiceImpl implements OrderService {
         if (subscription == null) {
             throw new ResourceNotFoundException("Subscription not found: " + request.getSubscriptionId());
         }
+        assertSubscriptionOwnership(subscription, request.getCustomerId());
         UUID oldTariffId = subscription.getTariffId();
         UUID newTariffId = request.getNewTariffId();
 
@@ -246,6 +248,14 @@ public class OrderServiceImpl implements OrderService {
                 order, oldTariffId, newTariffId, oldTariffCode, newTariffCode, priceDiff);
 
         return orderMapper.toResponse(order);
+    }
+
+    private void assertSubscriptionOwnership(SubscriptionDto subscription, UUID customerId) {
+        if (subscription.getCustomerId() == null || !subscription.getCustomerId().equals(customerId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Subscription does not belong to the authenticated customer");
+        }
     }
 
     @Override

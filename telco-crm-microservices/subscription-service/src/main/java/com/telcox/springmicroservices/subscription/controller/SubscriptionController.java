@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.telcox.springmicroservices.subscription.dto.CreateSubscriptionRequest;
 import com.telcox.springmicroservices.subscription.dto.SubscriptionResponse;
+import com.telcox.springmicroservices.subscription.service.AuthenticatedCustomerResolver;
 import com.telcox.springmicroservices.subscription.service.SubscriptionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -28,17 +30,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
+    private final AuthenticatedCustomerResolver authenticatedCustomerResolver;
 
-    public SubscriptionController(SubscriptionService subscriptionService) {
+    public SubscriptionController(SubscriptionService subscriptionService,
+            AuthenticatedCustomerResolver authenticatedCustomerResolver) {
         this.subscriptionService = subscriptionService;
+        this.authenticatedCustomerResolver = authenticatedCustomerResolver;
     }
 
     @PostMapping
     @Operation(summary = "Yeni abonelik oluştur",
                description = "Havuzdan boş numara tahsis ederek yeni abonelik başlatır.")
     public ResponseEntity<SubscriptionResponse> createSubscription(
+            @RequestHeader("X-User-Id") String keycloakUserId,
             @Valid @RequestBody CreateSubscriptionRequest request) {
-        SubscriptionResponse response = subscriptionService.createSubscription(request);
+        UUID customerId = authenticatedCustomerResolver.resolve(keycloakUserId);
+        CreateSubscriptionRequest authenticatedRequest = new CreateSubscriptionRequest(
+                customerId, request.tariffId(), request.tariffCode(), request.orderId());
+        SubscriptionResponse response = subscriptionService.createSubscription(authenticatedRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
