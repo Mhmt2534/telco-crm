@@ -200,8 +200,9 @@ public class CustomerOtpService {
      * 404 veya Feign hatası durumunda {@link ResponseStatusException} fırlatır.
      */
     private CustomerOtpInfo fetchCustomerOrThrow(String phone) {
+        String customerLookupPhone = PhoneNumberNormalizer.normalizeToLocalFormat(phone);
         try {
-            return customerServiceClient.getCustomerByPhone(phone);
+            return customerServiceClient.getCustomerByPhone(customerLookupPhone);
         } catch (FeignException.NotFound e) {
             log.info("Customer not found for phone: {}", maskPhone(phone));
             throw new ResponseStatusException(
