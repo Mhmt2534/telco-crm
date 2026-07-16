@@ -1,6 +1,8 @@
 package com.telcox.springmicroservices.subscription.dto;
 
+import java.util.UUID;
+
 public record SubscriptionActivationFailedEvent(
-        Long orderId,
+        UUID orderId,
         String reason
 ) {}

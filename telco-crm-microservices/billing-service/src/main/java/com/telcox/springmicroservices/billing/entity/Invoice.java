@@ -18,8 +18,8 @@ public class Invoice {
     @Column(name = "public_id", nullable = false, unique = true, updatable = false)
     private UUID publicId = UUID.randomUUID();
 
-    @Column(name = "customer_id", nullable = false)
-    private Long customerId;
+    @Column(name = "customer_public_id", nullable = false)
+    private UUID customerId;
 
     @Column(name = "subscription_id", nullable = false)
     private UUID subscriptionId;
@@ -43,7 +43,7 @@ public class Invoice {
     public Invoice() {
     }
 
-    public Invoice(Long customerId, UUID subscriptionId, BigDecimal amount, LocalDateTime dueDate) {
+    public Invoice(UUID customerId, UUID subscriptionId, BigDecimal amount, LocalDateTime dueDate) {
         this.customerId = customerId;
         this.subscriptionId = subscriptionId;
         this.amount = amount;
@@ -66,11 +66,11 @@ public class Invoice {
         this.publicId = publicId;
     }
 
-    public Long getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

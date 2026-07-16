@@ -69,8 +69,9 @@ class PaymentIntegrationTest {
     void testPaymentRetryScheduler_FailureThenEvent() throws InterruptedException {
         // Setup a failed payment with 3 previous attempts (simulating exhausted retries)
         Payment payment = new Payment();
-        payment.setInvoiceId("FAIL_INV_TEST");
-        payment.setCustomerId("123");
+        payment.setInvoiceId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000555"));
+        payment.setExternalRef("FAIL_INV_TEST");
+        payment.setCustomerId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000123"));
         payment.setAmount(new java.math.BigDecimal("100.00"));
         payment.setCurrency("TRY");
         payment.setMethod(com.telcox.springmicroservices.payment.domain.enums.PaymentMethod.CARD);

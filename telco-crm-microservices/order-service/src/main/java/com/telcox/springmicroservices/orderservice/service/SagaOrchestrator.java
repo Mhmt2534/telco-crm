@@ -36,12 +36,12 @@ public class SagaOrchestrator {
             log.info("Checking customer ID: {}", order.getCustomerId());
             customerServiceClient.getCustomerById(order.getCustomerId());
 
-            List<String> productCodes = order.getItems().stream()
-                    .map(item -> item.getProductCode())
+            List<UUID> productIds = order.getItems().stream()
+                    .map(item -> item.getProductId())
                     .toList();
-            log.info("Checking product codes: {}", productCodes);
-            if (!productCodes.isEmpty()) {
-                productCatalogServiceClient.getProductsByCodes(productCodes);
+            log.info("Checking product public IDs: {}", productIds);
+            if (!productIds.isEmpty()) {
+                productCatalogServiceClient.getProductsByIds(productIds);
             }
         } catch (com.telcox.common.core.exception.ResourceNotFoundException e) {
             log.warn("Downstream resource not found for order ID: {}", order.getId(), e);
@@ -65,18 +65,21 @@ public class SagaOrchestrator {
     }
 
     @Transactional
-    public void handleSubscriptionActivated(Long orderId) {
+    public void handleSubscriptionActivated(UUID orderId) {
         log.info("Handling SubscriptionActivated for order ID: {}", orderId);
-        
-        sagaStateRepository.findByOrderId(orderId).ifPresent(sagaState -> {
+
+        Order order = orderRepository.findByPublicId(orderId).orElse(null);
+        if (order == null) {
+            return;
+        }
+
+        sagaStateRepository.findByOrderId(order.getId()).ifPresent(sagaState -> {
             sagaState.setCurrentStep("STEP_3");
             sagaState.setStatus(SagaStatus.COMPLETED);
             sagaStateRepository.save(sagaState);
         });
 
-        orderRepository.findById(orderId).ifPresent(order -> {
-            order.setStatus(OrderStatus.FULFILLED);
-            orderRepository.save(order);
-        });
+        order.setStatus(OrderStatus.FULFILLED);
+        orderRepository.save(order);
     }
 }

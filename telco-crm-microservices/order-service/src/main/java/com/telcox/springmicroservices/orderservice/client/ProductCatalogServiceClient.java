@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.UUID;
 import io.github.resilience4j.retry.annotation.Retry;
 
 @FeignClient(
@@ -17,11 +18,11 @@ import io.github.resilience4j.retry.annotation.Retry;
 public interface ProductCatalogServiceClient {
 
     @GetMapping("/api/v1/products/batch")
-    List<ProductDto> getProductsByCodes(@RequestParam("codes") List<String> productCodes);
+    List<ProductDto> getProductsByIds(@RequestParam("ids") List<UUID> productIds);
 
     @GetMapping("/api/v1/addons")
     String getActiveAddons(
-            @RequestParam(value = "tariffCode", required = false) String tariffCode,
+            @RequestParam(value = "tariffId", required = false) UUID tariffId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "100") int size
     );

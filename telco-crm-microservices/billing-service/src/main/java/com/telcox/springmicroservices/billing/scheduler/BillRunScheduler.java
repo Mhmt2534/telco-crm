@@ -177,7 +177,7 @@ public class BillRunScheduler {
 
         // 2. Event Payload hazirla
         Map<String, Object> payloadMap = new HashMap<>();
-        payloadMap.put("invoiceId", invoice.getId());
+        payloadMap.put("invoiceId", invoice.getPublicId());
         payloadMap.put("customerId", invoice.getCustomerId());
         payloadMap.put("subscriptionId", invoice.getSubscriptionId());
         payloadMap.put("amount", invoice.getAmount());
@@ -190,13 +190,13 @@ public class BillRunScheduler {
         OutboxEvent outboxEvent = new OutboxEvent();
         outboxEvent.setId(UUID.randomUUID());
         outboxEvent.setAggregateType("invoice");
-        outboxEvent.setAggregateId(String.valueOf(invoice.getId()));
-        outboxEvent.setType("InvoiceGeneratedEvent");
+        outboxEvent.setAggregateId(invoice.getPublicId().toString());
+        outboxEvent.setType("InvoiceGenerated");
         outboxEvent.setPayload(payloadJson);
         outboxEvent.setStatus(OutboxStatus.PENDING);
 
         outboxEventRepository.save(outboxEvent);
 
-        log.info("Invoice {} generated successfully for customer {}", invoice.getId(), invoice.getCustomerId());
+        log.info("Invoice {} generated successfully for customer {}", invoice.getPublicId(), invoice.getCustomerId());
     }
 }

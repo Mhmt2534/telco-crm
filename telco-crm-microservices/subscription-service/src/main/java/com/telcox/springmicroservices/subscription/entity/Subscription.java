@@ -15,14 +15,17 @@ import jakarta.persistence.Table;
 @Table(name = "subscriptions")
 public class Subscription extends BaseEntity {
 
-    @Column(name = "customer_id", nullable = false)
-    private Long customerId;
+    @Column(name = "customer_public_id", nullable = false)
+    private UUID customerId;
 
     @Column(nullable = false, length = 20)
     private String msisdn;
 
     @Column(name = "tariff_code", nullable = false, length = 50)
     private String tariffCode;
+
+    @Column(name = "tariff_public_id", nullable = false)
+    private UUID tariffId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -36,14 +39,16 @@ public class Subscription extends BaseEntity {
 
     public Subscription() {}
 
-    public Long getCustomerId() { return customerId; }
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 
     public String getMsisdn() { return msisdn; }
     public void setMsisdn(String msisdn) { this.msisdn = msisdn; }
 
     public String getTariffCode() { return tariffCode; }
     public void setTariffCode(String tariffCode) { this.tariffCode = tariffCode; }
+    public UUID getTariffId() { return tariffId; }
+    public void setTariffId(UUID tariffId) { this.tariffId = tariffId; }
 
     public SubscriptionStatus getStatus() { return status; }
     public void setStatus(SubscriptionStatus status) { this.status = status; }

@@ -268,7 +268,7 @@ public class QuotaService {
             Quota activeQuota = quotaRepository.findBySubscriptionIdAndStatus(event.getSubscriptionId(), QuotaStatus.ACTIVE)
                     .orElseThrow(() -> new IllegalArgumentException("Abonelik için aktif kota bulunamadı: " + event.getSubscriptionId()));
 
-            TariffDto newTariff = productCatalogServiceClient.getTariffByCode(event.getNewTariffCode());
+            TariffDto newTariff = productCatalogServiceClient.getTariffById(event.getNewTariffId());
             if (newTariff == null) {
                 throw new RuntimeException("Yeni tarife bilgisi alınamadı: " + event.getNewTariffCode());
             }

@@ -31,6 +31,9 @@ public class OrderItem {
     @EqualsAndHashCode.Exclude
     private Order order;
 
+    @Column(name = "product_public_id", nullable = false)
+    private UUID productId;
+
     @Column(name = "product_code", nullable = false, length = 100)
     private String productCode;
 

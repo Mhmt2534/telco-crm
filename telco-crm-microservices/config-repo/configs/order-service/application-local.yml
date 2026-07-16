@@ -45,6 +45,7 @@ resilience4j:
         enableExponentialBackoff: true
         ignoreExceptions:
           - com.telcox.common.core.exception.ResourceNotFoundException
+          - com.telcox.springmicroservices.orderservice.client.CustomerServiceContractException
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
       product-catalog-service:
         maxAttempts: 3

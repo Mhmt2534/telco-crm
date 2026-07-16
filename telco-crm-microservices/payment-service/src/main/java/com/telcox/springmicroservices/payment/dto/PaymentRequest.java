@@ -4,11 +4,15 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class PaymentRequest {
 
-    @NotBlank(message = "Invoice ID is required")
-    private String invoiceId;
+    @NotNull(message = "Customer ID is required")
+    private UUID customerId;
+
+    @NotNull(message = "Invoice ID is required")
+    private UUID invoiceId;
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than zero")
@@ -20,13 +24,16 @@ public class PaymentRequest {
     @NotBlank(message = "Payment method is required")
     private String method;
     
-    private Long orderId;
+    private UUID orderId;
 
-    public String getInvoiceId() {
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+
+    public UUID getInvoiceId() {
         return invoiceId;
     }
 
-    public void setInvoiceId(String invoiceId) {
+    public void setInvoiceId(UUID invoiceId) {
         this.invoiceId = invoiceId;
     }
 
@@ -54,11 +61,11 @@ public class PaymentRequest {
         this.method = method;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 }

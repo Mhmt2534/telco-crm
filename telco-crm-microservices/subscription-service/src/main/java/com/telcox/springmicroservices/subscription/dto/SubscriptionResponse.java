@@ -10,9 +10,10 @@ import com.telcox.springmicroservices.subscription.entity.SubscriptionStatus;
  */
 public record SubscriptionResponse(
         UUID id,
-        Long customerId,
+        UUID customerId,
         String msisdn,
         String tariffCode,
+        UUID tariffId,
         SubscriptionStatus status,
         Instant activatedAt,
         Instant terminatedAt,

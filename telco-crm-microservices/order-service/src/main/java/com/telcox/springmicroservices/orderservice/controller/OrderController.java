@@ -12,6 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -31,14 +32,14 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
         OrderResponse response = orderService.getOrderById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<Page<OrderResponse>> getOrdersByCustomerId(
-            @RequestParam Long customerId,
+            @RequestParam UUID customerId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<OrderResponse> response = orderService.getOrdersByCustomerId(customerId, pageable);
@@ -46,7 +47,7 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id) {
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable UUID id) {
         OrderResponse response = orderService.cancelOrder(id);
         return ResponseEntity.ok(response);
     }
@@ -67,7 +68,7 @@ public class OrderController {
 
     // @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/compensate")
-    public ResponseEntity<OrderResponse> compensateOrder(@PathVariable Long id) {
+    public ResponseEntity<OrderResponse> compensateOrder(@PathVariable UUID id) {
         OrderResponse response = orderService.compensateOrder(id);
         return ResponseEntity.ok(response);
     }

@@ -14,9 +14,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SubscriptionDto {
     private UUID id;
-    private Long customerId;
+    private UUID customerId;
     private String msisdn;
     private String tariffCode;
+    private UUID tariffId;
     private String status;
     private Instant activatedAt;
     private Instant terminatedAt;

@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/internal/tariffs")
 @RequiredArgsConstructor
@@ -19,9 +21,9 @@ public class InternalCatalogController {
     private final TariffService tariffService;
     private final CatalogMapper catalogMapper;
 
-    @GetMapping("/{code}/active")
-    public ResponseEntity<TariffResponse> getActiveTariff(@PathVariable String code) {
-        Tariff active = tariffService.getActiveTariffByCode(code);
+    @GetMapping("/{id}/active")
+    public ResponseEntity<TariffResponse> getActiveTariff(@PathVariable UUID id) {
+        Tariff active = tariffService.getActiveTariff(id);
         return ResponseEntity.ok(catalogMapper.toResponse(active));
     }
 }

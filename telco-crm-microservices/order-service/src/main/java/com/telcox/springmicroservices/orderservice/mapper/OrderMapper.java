@@ -34,9 +34,11 @@ public interface OrderMapper {
     @Mapping(target = "createdAt", ignore = true)
     OrderItem toEntity(OrderItemRequest request);
 
+    @Mapping(target = "id", source = "publicId")
     @Mapping(target = "sagaState", ignore = true)
     OrderResponse toResponse(Order order);
 
+    @Mapping(target = "id", source = "publicId")
     OrderItemResponse toResponse(OrderItem item);
     
     // Helper default method to enrich response if sagaState is available later

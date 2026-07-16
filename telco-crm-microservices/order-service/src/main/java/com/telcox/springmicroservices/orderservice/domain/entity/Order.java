@@ -31,8 +31,8 @@ public class Order {
     @Builder.Default
     private UUID publicId = UUID.randomUUID();
 
-    @Column(name = "customer_id", nullable = false)
-    private Long customerId;
+    @Column(name = "customer_public_id", nullable = false)
+    private UUID customerId;
 
     @Column(name = "subscription_id")
     private UUID subscriptionId;

@@ -7,13 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomerResponse {
-    private Long id;
+    private UUID id;
     private String type;
     private String firstName;
     private String lastName;

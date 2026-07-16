@@ -2,7 +2,6 @@ package com.telcox.springmicroservices.orderservice.dto;
 
 import com.telcox.springmicroservices.orderservice.domain.enums.ProductType;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -17,8 +17,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class OrderItemRequest {
 
-    @NotBlank(message = "Product code cannot be empty")
-    private String productCode;
+    @NotNull(message = "Product ID cannot be null")
+    private UUID productId;
 
     @NotNull(message = "Product type cannot be null")
     private ProductType productType;

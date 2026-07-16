@@ -31,6 +31,7 @@ public interface CustomerMapper {
     @Mapping(target = "isDefault", ignore = true)
     Address toAddressEntity(AddressDto dto);
 
+    @Mapping(target = "id", source = "publicId")
     @Mapping(target = "maskedIdentityNumber", source = "identityNumber", qualifiedByName = "maskIdentityNumber")
     CustomerResponse toResponse(Customer customer);
 

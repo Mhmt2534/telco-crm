@@ -23,7 +23,7 @@ public class OutboxEventPublisher {
     public void publishCustomerRegistered(Customer customer) {
         try {
             CustomerRegisteredEvent eventPayload = CustomerRegisteredEvent.builder()
-                    .customerId(customer.getId())
+                    .customerId(customer.getPublicId())
                     .firstName(customer.getFirstName())
                     .lastName(customer.getLastName())
                     .phone(customer.getPhone())
@@ -35,12 +35,12 @@ public class OutboxEventPublisher {
 
             OutboxEvent outboxEvent = new OutboxEvent();
             outboxEvent.setAggregateType("Customer");
-            outboxEvent.setAggregateId(String.valueOf(customer.getId()));
+            outboxEvent.setAggregateId(customer.getPublicId().toString());
             outboxEvent.setEventType("CustomerRegistered");
             outboxEvent.setPayload(objectMapper.writeValueAsString(eventPayload));
 
             outboxEventRepository.save(outboxEvent);
-            log.info("CustomerRegistered eventi outbox'a yazıldı. Müşteri ID: {}", customer.getId());
+            log.info("CustomerRegistered eventi outbox'a yazıldı. Müşteri public ID: {}", customer.getPublicId());
         } catch (Exception e) {
             log.error("CustomerRegistered eventi oluşturulamadı", e);
             throw new RuntimeException("Event serialize edilemedi", e);
@@ -50,7 +50,7 @@ public class OutboxEventPublisher {
     public void publishCustomerUpdated(Customer customer, String changeReason) {
         try {
             CustomerUpdatedEvent eventPayload = CustomerUpdatedEvent.builder()
-                    .customerId(customer.getId())
+                    .customerId(customer.getPublicId())
                     .keycloakUserId(customer.getKeycloakUserId())
                     .firstName(customer.getFirstName())
                     .lastName(customer.getLastName())
@@ -63,12 +63,12 @@ public class OutboxEventPublisher {
 
             OutboxEvent outboxEvent = new OutboxEvent();
             outboxEvent.setAggregateType("Customer");
-            outboxEvent.setAggregateId(String.valueOf(customer.getId()));
+            outboxEvent.setAggregateId(customer.getPublicId().toString());
             outboxEvent.setEventType("CustomerUpdated");
             outboxEvent.setPayload(objectMapper.writeValueAsString(eventPayload));
 
             outboxEventRepository.save(outboxEvent);
-            log.info("CustomerUpdated eventi outbox'a yazıldı. Müşteri ID: {}, Sebep: {}", customer.getId(), changeReason);
+            log.info("CustomerUpdated eventi outbox'a yazıldı. Müşteri public ID: {}, Sebep: {}", customer.getPublicId(), changeReason);
         } catch (Exception e) {
             log.error("CustomerUpdated eventi oluşturulamadı", e);
             throw new RuntimeException("Event serialize edilemedi", e);

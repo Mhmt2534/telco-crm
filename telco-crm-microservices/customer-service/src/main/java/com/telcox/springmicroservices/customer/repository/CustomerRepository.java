@@ -5,10 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Optional<Customer> findByPhone(String phone);
+    Optional<Customer> findByPublicId(UUID publicId);
     Optional<Customer> findByIdentityNumber(String identityNumber);
     boolean existsByPhone(String phone);
     boolean existsByIdentityNumber(String identityNumber);

@@ -20,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 import com.telcox.springmicroservices.orderservice.client.ProductCatalogServiceClient;
@@ -43,7 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductCatalogServiceClient productCatalogServiceClient;
     private final OutboxEventPublisher outboxEventPublisher;
     private final ObjectMapper objectMapper;
-    private final OrderMapper orderMapper = org.mapstruct.factory.Mappers.getMapper(OrderMapper.class);
+    private final OrderMapper orderMapper;
 
     @Override
     @Transactional
@@ -54,11 +57,21 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.PENDING_PAYMENT);
         order.setCurrency("TRY");
 
-        // Calculate total amount
+        List<ProductDto> products = productCatalogServiceClient.getProductsByIds(
+                request.getItems().stream().map(item -> item.getProductId()).toList());
+        Map<UUID, ProductDto> productsById = products.stream()
+                .collect(Collectors.toMap(ProductDto::getProductId, Function.identity()));
+
+        // Calculate total amount and retain the business code only as descriptive data.
         BigDecimal totalAmount = BigDecimal.ZERO;
         if (request.getItems() != null) {
             for (var itemReq : request.getItems()) {
                 OrderItem item = orderMapper.toEntity(itemReq);
+                ProductDto product = productsById.get(itemReq.getProductId());
+                if (product == null) {
+                    throw new ResourceNotFoundException("Product not found: " + itemReq.getProductId());
+                }
+                item.setProductCode(product.getProductCode());
                 BigDecimal lineTotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
                 totalAmount = totalAmount.add(lineTotal);
                 order.addItem(item);
@@ -76,18 +89,18 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public OrderResponse getOrderById(Long id) {
+    public OrderResponse getOrderById(UUID id) {
         log.info("Fetching order with ID: {}", id);
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByPublicId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
 
-        SagaState sagaState = sagaStateRepository.findByOrderId(id).orElse(null);
+        SagaState sagaState = sagaStateRepository.findByOrderId(order.getId()).orElse(null);
         return orderMapper.toResponse(order, sagaState);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getOrdersByCustomerId(Long customerId, Pageable pageable) {
+    public Page<OrderResponse> getOrdersByCustomerId(UUID customerId, Pageable pageable) {
         log.info("Fetching orders for customer ID: {}", customerId);
         return orderRepository.findByCustomerId(customerId, pageable)
                 .map(order -> {
@@ -98,9 +111,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderResponse cancelOrder(Long id) {
+    public OrderResponse cancelOrder(UUID id) {
         log.info("Cancelling order with ID: {}", id);
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByPublicId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
 
         if (order.getStatus() != OrderStatus.DRAFT && order.getStatus() != OrderStatus.PENDING_PAYMENT) {
@@ -110,7 +123,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         order = orderRepository.save(order);
 
-        SagaState sagaState = sagaStateRepository.findByOrderId(id).orElse(null);
+        SagaState sagaState = sagaStateRepository.findByOrderId(order.getId()).orElse(null);
         return orderMapper.toResponse(order, sagaState);
     }
 
@@ -124,10 +137,10 @@ public class OrderServiceImpl implements OrderService {
         if (subscription == null) {
             throw new ResourceNotFoundException("Subscription not found: " + request.getSubscriptionId());
         }
-        String tariffCode = subscription.getTariffCode();
+        UUID tariffId = subscription.getTariffId();
 
         // 2. Fetch allowed addons for this tariff
-        String addonsJsonResponse = productCatalogServiceClient.getActiveAddons(tariffCode, 0, 100);
+        String addonsJsonResponse = productCatalogServiceClient.getActiveAddons(tariffId, 0, 100);
         boolean isValidAddon = false;
         
         if (addonsJsonResponse != null && !addonsJsonResponse.isBlank()) {
@@ -135,21 +148,21 @@ public class OrderServiceImpl implements OrderService {
                 com.fasterxml.jackson.databind.JsonNode addonsResponse = objectMapper.readTree(addonsJsonResponse);
                 if (addonsResponse.has("content")) {
                     for (com.fasterxml.jackson.databind.JsonNode node : addonsResponse.get("content")) {
-                        if (node.has("code") && request.getAddonCode().equals(node.get("code").asText())) {
+                        if (node.has("id") && request.getAddonId().toString().equals(node.get("id").asText())) {
                             isValidAddon = true;
                             break;
                         }
                     }
                 }
             } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-                log.error("Failed to parse addons response for tariff {}: {}", tariffCode, e.getMessage());
+                log.error("Failed to parse addons response for tariff {}: {}", tariffId, e.getMessage());
             }
         }
         
         // 3. Validate
         if (!isValidAddon) {
-            log.warn("Validation failed: Addon {} is not compatible with tariff {}", request.getAddonCode(), tariffCode);
-            throw new com.telcox.common.core.exception.BusinessRuleException("The requested addon " + request.getAddonCode() + " is not compatible with the subscriber's current tariff " + tariffCode);
+            log.warn("Validation failed: Addon {} is not compatible with tariff {}", request.getAddonId(), tariffId);
+            throw new com.telcox.common.core.exception.BusinessRuleException("The requested addon " + request.getAddonId() + " is not compatible with the subscriber's current tariff " + tariffId);
         }
 
         Order order = new Order();
@@ -159,14 +172,15 @@ public class OrderServiceImpl implements OrderService {
         order.setCurrency("TRY");
 
         // We fetch the product price
-        List<ProductDto> products = productCatalogServiceClient.getProductsByCodes(List.of(request.getAddonCode()));
+        List<ProductDto> products = productCatalogServiceClient.getProductsByIds(List.of(request.getAddonId()));
         if (products == null || products.isEmpty()) {
-            throw new ResourceNotFoundException("Addon product not found: " + request.getAddonCode());
+            throw new ResourceNotFoundException("Addon product not found: " + request.getAddonId());
         }
         ProductDto addonProduct = products.get(0);
 
         OrderItem item = new OrderItem();
-        item.setProductCode(request.getAddonCode());
+        item.setProductId(addonProduct.getProductId());
+        item.setProductCode(addonProduct.getProductCode());
         item.setProductType(ProductType.ADDON);
         item.setQuantity(request.getQuantity());
         item.setUnitPrice(addonProduct.getPrice());
@@ -194,15 +208,17 @@ public class OrderServiceImpl implements OrderService {
         if (subscription == null) {
             throw new ResourceNotFoundException("Subscription not found: " + request.getSubscriptionId());
         }
-        String oldTariffCode = subscription.getTariffCode();
-        String newTariffCode = request.getNewTariffCode();
+        UUID oldTariffId = subscription.getTariffId();
+        UUID newTariffId = request.getNewTariffId();
 
         // 2. Get product details for old and new tariff
-        List<ProductDto> products = productCatalogServiceClient.getProductsByCodes(List.of(oldTariffCode, newTariffCode));
-        ProductDto oldTariffProduct = products.stream().filter(p -> p.getProductCode().equals(oldTariffCode)).findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Old tariff product not found: " + oldTariffCode));
-        ProductDto newTariffProduct = products.stream().filter(p -> p.getProductCode().equals(newTariffCode)).findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("New tariff product not found: " + newTariffCode));
+        List<ProductDto> products = productCatalogServiceClient.getProductsByIds(List.of(oldTariffId, newTariffId));
+        ProductDto oldTariffProduct = products.stream().filter(p -> p.getProductId().equals(oldTariffId)).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Old tariff product not found: " + oldTariffId));
+        ProductDto newTariffProduct = products.stream().filter(p -> p.getProductId().equals(newTariffId)).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("New tariff product not found: " + newTariffId));
+        String oldTariffCode = oldTariffProduct.getProductCode();
+        String newTariffCode = newTariffProduct.getProductCode();
 
         // 3. Calculate price diff
         BigDecimal priceDiff = newTariffProduct.getPrice().subtract(oldTariffProduct.getPrice());
@@ -216,6 +232,7 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(BigDecimal.ZERO); // It's just a change, billed next cycle
 
         OrderItem item = new OrderItem();
+        item.setProductId(newTariffProduct.getProductId());
         item.setProductCode(newTariffCode);
         item.setProductType(ProductType.TARIFF_CHANGE);
         item.setQuantity(1);
@@ -225,20 +242,21 @@ public class OrderServiceImpl implements OrderService {
         order = orderRepository.save(order);
 
         // 5. Publish event directly in the same transaction
-        outboxEventPublisher.publishTariffChangeRequested(order, oldTariffCode, newTariffCode, priceDiff);
+        outboxEventPublisher.publishTariffChangeRequested(
+                order, oldTariffId, newTariffId, oldTariffCode, newTariffCode, priceDiff);
 
         return orderMapper.toResponse(order);
     }
 
     @Override
     @Transactional
-    public OrderResponse compensateOrder(Long id) {
+    public OrderResponse compensateOrder(UUID id) {
         log.info("Manual compensation triggered for order ID: {}", id);
         
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByPublicId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
 
-        SagaState sagaState = sagaStateRepository.findByOrderId(id)
+        SagaState sagaState = sagaStateRepository.findByOrderId(order.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Saga state not found for order ID: " + id));
 
         if (sagaState.getStatus() == SagaStatus.COMPENSATED || sagaState.getStatus() == SagaStatus.COMPLETED) {
@@ -260,7 +278,7 @@ public class OrderServiceImpl implements OrderService {
             paymentId = sagaState.getPayload().get("paymentId").asText();
         }
         
-        outboxEventPublisher.publishPaymentRefundRequested(order.getId(), paymentId, order.getTotalAmount());
+        outboxEventPublisher.publishPaymentRefundRequested(order.getPublicId(), paymentId, order.getTotalAmount());
         
         return orderMapper.toResponse(order, sagaState);
     }

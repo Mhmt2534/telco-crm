@@ -90,7 +90,7 @@ public class InvoiceOverdueScheduler {
 
         // 2. Prepare Event Payload
         Map<String, Object> payloadMap = new HashMap<>();
-        payloadMap.put("invoiceId", invoice.getId());
+        payloadMap.put("invoiceId", invoice.getPublicId());
         payloadMap.put("customerId", invoice.getCustomerId());
         payloadMap.put("subscriptionId", invoice.getSubscriptionId());
         payloadMap.put("amount", invoice.getAmount());
@@ -103,8 +103,8 @@ public class InvoiceOverdueScheduler {
         OutboxEvent outboxEvent = new OutboxEvent();
         outboxEvent.setId(UUID.randomUUID());
         outboxEvent.setAggregateType("invoice");
-        outboxEvent.setAggregateId(String.valueOf(invoice.getId()));
-        outboxEvent.setType("InvoiceOverdueEvent");
+        outboxEvent.setAggregateId(invoice.getPublicId().toString());
+        outboxEvent.setType("InvoiceOverdue");
         outboxEvent.setPayload(payloadJson);
         outboxEvent.setStatus(OutboxStatus.PENDING);
 

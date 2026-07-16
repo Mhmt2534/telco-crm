@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -17,7 +18,7 @@ import java.util.List;
 public class OrderRequest {
 
     @NotNull(message = "Customer ID cannot be null")
-    private Long customerId;
+    private UUID customerId;
 
     @NotEmpty(message = "Order must contain at least one item")
     @Valid

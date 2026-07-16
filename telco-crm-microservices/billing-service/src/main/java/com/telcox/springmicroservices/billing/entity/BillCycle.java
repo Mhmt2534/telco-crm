@@ -13,8 +13,8 @@ public class BillCycle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "customer_id", nullable = false)
-    private Long customerId;
+    @Column(name = "customer_public_id", nullable = false)
+    private UUID customerId;
 
     @Column(name = "subscription_id", nullable = false)
     private UUID subscriptionId;
@@ -34,7 +34,7 @@ public class BillCycle {
     public BillCycle() {
     }
 
-    public BillCycle(Long customerId, UUID subscriptionId, String msisdn, Integer cutOffDay, BigDecimal fixedAmount) {
+    public BillCycle(UUID customerId, UUID subscriptionId, String msisdn, Integer cutOffDay, BigDecimal fixedAmount) {
         this.customerId = customerId;
         this.subscriptionId = subscriptionId;
         this.msisdn = msisdn;
@@ -50,11 +50,11 @@ public class BillCycle {
         this.id = id;
     }
 
-    public Long getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

@@ -7,8 +7,8 @@ import java.util.UUID;
 public class PaymentResponse {
 
     private UUID paymentId;
-    private String invoiceId;
-    private String customerId;
+    private UUID invoiceId;
+    private UUID customerId;
     private BigDecimal amount;
     private String currency;
     private String status;
@@ -16,7 +16,7 @@ public class PaymentResponse {
     
     public PaymentResponse() {}
 
-    public PaymentResponse(UUID paymentId, String invoiceId, String customerId, BigDecimal amount, String currency, String status, OffsetDateTime paidAt) {
+    public PaymentResponse(UUID paymentId, UUID invoiceId, UUID customerId, BigDecimal amount, String currency, String status, OffsetDateTime paidAt) {
         this.paymentId = paymentId;
         this.invoiceId = invoiceId;
         this.customerId = customerId;
@@ -34,19 +34,19 @@ public class PaymentResponse {
         this.paymentId = paymentId;
     }
 
-    public String getInvoiceId() {
+    public UUID getInvoiceId() {
         return invoiceId;
     }
 
-    public void setInvoiceId(String invoiceId) {
+    public void setInvoiceId(UUID invoiceId) {
         this.invoiceId = invoiceId;
     }
 
-    public String getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

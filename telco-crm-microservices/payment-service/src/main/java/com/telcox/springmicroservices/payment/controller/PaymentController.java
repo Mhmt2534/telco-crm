@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -82,8 +83,8 @@ public class PaymentController {
             @RequestHeader(value = "X-User-Id") String userId,
             @Valid @RequestBody WalletTopUpRequest request) {
         
-        log.info("Received wallet top-up request for user: {}, amount: {}", userId, request.getAmount());
-        WalletBalanceResponse response = paymentService.topUpWallet(userId, request);
+        log.info("Received wallet top-up request for customer: {}, actor: {}, amount: {}", request.getCustomerId(), userId, request.getAmount());
+        WalletBalanceResponse response = paymentService.topUpWallet(request.getCustomerId(), request);
         return ResponseEntity.ok(response);
     }
 
@@ -91,7 +92,7 @@ public class PaymentController {
     @Operation(summary = "Get customer wallet balance", description = "Retrieves the current balance of a customer's digital wallet")
     public ResponseEntity<WalletBalanceResponse> getWalletBalance(
             @Parameter(description = "Customer ID")
-            @PathVariable("customerId") String customerId) {
+            @PathVariable("customerId") UUID customerId) {
         
         log.info("Received wallet balance request for customer: {}", customerId);
         WalletBalanceResponse response = paymentService.getWalletBalance(customerId);

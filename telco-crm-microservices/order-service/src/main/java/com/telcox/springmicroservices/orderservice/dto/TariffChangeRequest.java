@@ -1,6 +1,5 @@
 package com.telcox.springmicroservices.orderservice.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,11 +15,11 @@ import java.util.UUID;
 public class TariffChangeRequest {
     
     @NotNull(message = "Customer ID cannot be null")
-    private Long customerId;
+    private UUID customerId;
     
     @NotNull(message = "Subscription ID cannot be null")
     private UUID subscriptionId;
     
-    @NotBlank(message = "New Tariff Code cannot be blank")
-    private String newTariffCode;
+    @NotNull(message = "New Tariff ID cannot be null")
+    private UUID newTariffId;
 }

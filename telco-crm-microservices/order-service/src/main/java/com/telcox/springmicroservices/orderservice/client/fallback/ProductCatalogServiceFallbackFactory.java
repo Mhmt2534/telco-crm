@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -31,14 +32,14 @@ public class ProductCatalogServiceFallbackFactory implements FallbackFactory<Pro
 
         return new ProductCatalogServiceClient() {
             @Override
-            public List<ProductDto> getProductsByCodes(List<String> productCodes) {
-                log.error("Product catalog service is unavailable for productCodes: {}. Cause: {}", productCodes, cause.getMessage());
+            public List<ProductDto> getProductsByIds(List<UUID> productIds) {
+                log.error("Product catalog service is unavailable for productIds: {}. Cause: {}", productIds, cause.getMessage());
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Product catalog service is currently unavailable");
             }
 
             @Override
-            public String getActiveAddons(String tariffCode, int page, int size) {
-                log.error("Product catalog service is unavailable for getting addons by tariffCode: {}. Cause: {}", tariffCode, cause.getMessage());
+            public String getActiveAddons(UUID tariffId, int page, int size) {
+                log.error("Product catalog service is unavailable for getting addons by tariffId: {}. Cause: {}", tariffId, cause.getMessage());
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Product catalog service is currently unavailable");
             }
         };

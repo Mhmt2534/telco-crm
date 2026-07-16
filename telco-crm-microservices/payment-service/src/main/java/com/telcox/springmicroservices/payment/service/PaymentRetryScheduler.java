@@ -117,8 +117,7 @@ public class PaymentRetryScheduler {
         newAttempt.setAttemptedAt(OffsetDateTime.now());
 
         // Mock PSP Call for retry
-        boolean isFailed = payment.getInvoiceId() != null && 
-            (payment.getInvoiceId().startsWith("FAIL_") || payment.getInvoiceId().equals("112") || payment.getInvoiceId().equals("555"));
+        boolean isFailed = payment.getExternalRef() != null && payment.getExternalRef().startsWith("FAIL_");
 
         if (isFailed) {
             newAttempt.setResponseCode("51");
@@ -149,6 +148,7 @@ public class PaymentRetryScheduler {
         PaymentCompletedEvent event = new PaymentCompletedEvent(
                 payment.getId(),
                 payment.getOrderId(),
+                payment.getInvoiceId(),
                 payment.getCustomerId(),
                 payment.getAmount(),
                 payment.getPaidAt() != null ? payment.getPaidAt().toInstant() : Instant.now()

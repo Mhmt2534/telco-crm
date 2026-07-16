@@ -6,17 +6,19 @@ import java.util.UUID;
 
 public class PaymentCompletedEvent {
     private UUID paymentId;
-    private Long orderId;
-    private String customerId;
+    private UUID orderId;
+    private UUID invoiceId;
+    private UUID customerId;
     private BigDecimal amount;
     private Instant occurredAt;
 
     public PaymentCompletedEvent() {
     }
 
-    public PaymentCompletedEvent(UUID paymentId, Long orderId, String customerId, BigDecimal amount, Instant occurredAt) {
+    public PaymentCompletedEvent(UUID paymentId, UUID orderId, UUID invoiceId, UUID customerId, BigDecimal amount, Instant occurredAt) {
         this.paymentId = paymentId;
         this.orderId = orderId;
+        this.invoiceId = invoiceId;
         this.customerId = customerId;
         this.amount = amount;
         this.occurredAt = occurredAt;
@@ -30,19 +32,22 @@ public class PaymentCompletedEvent {
         this.paymentId = paymentId;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 
-    public String getCustomerId() {
+    public UUID getInvoiceId() { return invoiceId; }
+    public void setInvoiceId(UUID invoiceId) { this.invoiceId = invoiceId; }
+
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

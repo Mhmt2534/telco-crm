@@ -1,36 +1,37 @@
 package com.telcox.springmicroservices.payment.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class OrderCreatedEvent {
-    private Long orderId;
-    private String customerId;
+    private UUID orderId;
+    private UUID customerId;
     private BigDecimal totalAmount;
     private String occurredAt;
 
     public OrderCreatedEvent() {
     }
 
-    public OrderCreatedEvent(Long orderId, String customerId, BigDecimal totalAmount, String occurredAt) {
+    public OrderCreatedEvent(UUID orderId, UUID customerId, BigDecimal totalAmount, String occurredAt) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.totalAmount = totalAmount;
         this.occurredAt = occurredAt;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 
-    public String getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

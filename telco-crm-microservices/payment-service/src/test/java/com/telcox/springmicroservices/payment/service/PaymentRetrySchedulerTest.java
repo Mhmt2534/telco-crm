@@ -74,7 +74,7 @@ class PaymentRetrySchedulerTest {
         Payment payment = new Payment();
         ReflectionTestUtils.setField(payment, "id", UUID.randomUUID());
         payment.setStatus(PaymentStatus.PENDING);
-        payment.setInvoiceId("INV_123");
+        payment.setInvoiceId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000123"));
         payment.setAttempts(new ArrayList<>());
         
         PaymentAttempt attempt1 = new PaymentAttempt();
@@ -95,7 +95,8 @@ class PaymentRetrySchedulerTest {
         Payment payment = new Payment();
         ReflectionTestUtils.setField(payment, "id", UUID.randomUUID());
         payment.setStatus(PaymentStatus.PENDING);
-        payment.setInvoiceId("FAIL_INV"); // Will cause failure
+        payment.setInvoiceId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000555"));
+        payment.setExternalRef("FAIL_INV"); // Will cause failure
         payment.setAttempts(new ArrayList<>());
         
         // Setup 3 previous attempts

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -24,13 +25,14 @@ public class ProductController {
     private final AddonService addonService;
 
     @GetMapping("/batch")
-    public ResponseEntity<List<ProductResponse>> getProductsByCodes(@RequestParam("codes") List<String> codes) {
+    public ResponseEntity<List<ProductResponse>> getProductsByIds(@RequestParam("ids") List<UUID> ids) {
         List<ProductResponse> responses = new ArrayList<>();
         
-        for (String code : codes) {
+        for (UUID id : ids) {
             try {
-                Tariff tariff = tariffService.getActiveTariffByCode(code);
+                Tariff tariff = tariffService.getActiveTariff(id);
                 responses.add(ProductResponse.builder()
+                        .productId(tariff.getPublicId())
                         .productCode(tariff.getCode())
                         .name(tariff.getName())
                         .price(tariff.getMonthlyFee())
@@ -42,8 +44,9 @@ public class ProductController {
             }
             
             try {
-                Addon addon = addonService.getActiveAddonByCode(code);
+                Addon addon = addonService.getActiveAddon(id);
                 responses.add(ProductResponse.builder()
+                        .productId(addon.getPublicId())
                         .productCode(addon.getCode())
                         .name(addon.getName())
                         .price(addon.getPrice())
@@ -54,8 +57,8 @@ public class ProductController {
             }
         }
         
-        if (responses.isEmpty() && !codes.isEmpty()) {
-            throw new com.telcox.common.core.exception.ResourceNotFoundException("Products not found for codes: " + codes);
+        if (responses.isEmpty() && !ids.isEmpty()) {
+            throw new com.telcox.common.core.exception.ResourceNotFoundException("Products not found for public IDs: " + ids);
         }
         
         return ResponseEntity.ok(responses);

@@ -27,6 +27,7 @@ public class OutboxEventPublisher {
     public void publishTariffCreated(Tariff tariff) {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("tariffId", tariff.getPublicId());
             payload.put("code", tariff.getCode());
             payload.put("name", tariff.getName());
             payload.put("type", tariff.getType().name());
@@ -43,7 +44,7 @@ public class OutboxEventPublisher {
 
             OutboxEvent event = OutboxEvent.builder()
                     .aggregateType("Tariff")
-                    .aggregateId(tariff.getCode())
+                    .aggregateId(tariff.getPublicId().toString())
                     .eventType("TariffCreated")
                     .payload(payloadJson)
                     .build();
@@ -59,6 +60,7 @@ public class OutboxEventPublisher {
     public void publishTariffPriceChanged(Tariff oldTariff, Tariff newTariff) {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("tariffId", newTariff.getPublicId());
             payload.put("code", newTariff.getCode());
             payload.put("oldVersion", oldTariff.getVersion());
             payload.put("newVersion", newTariff.getVersion());
@@ -72,7 +74,7 @@ public class OutboxEventPublisher {
 
             OutboxEvent event = OutboxEvent.builder()
                     .aggregateType("Tariff")
-                    .aggregateId(newTariff.getCode())
+                    .aggregateId(newTariff.getPublicId().toString())
                     .eventType("TariffPriceChanged")
                     .payload(payloadJson)
                     .build();

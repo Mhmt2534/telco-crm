@@ -1,8 +1,9 @@
 package com.telcox.springmicroservices.subscription.dto;
 
 public class OrderConfirmedEvent {
-    private Long orderId;
-    private Long customerId;
+    private java.util.UUID orderId;
+    private java.util.UUID customerId;
+    private java.util.UUID productId;
     private String tariffCode;
     private String productType;
     private java.util.UUID subscriptionId;
@@ -10,29 +11,33 @@ public class OrderConfirmedEvent {
     public OrderConfirmedEvent() {
     }
 
-    public OrderConfirmedEvent(Long orderId, Long customerId, String tariffCode, String productType, java.util.UUID subscriptionId) {
+    public OrderConfirmedEvent(java.util.UUID orderId, java.util.UUID customerId, java.util.UUID productId, String tariffCode, String productType, java.util.UUID subscriptionId) {
         this.orderId = orderId;
         this.customerId = customerId;
+        this.productId = productId;
         this.tariffCode = tariffCode;
         this.productType = productType;
         this.subscriptionId = subscriptionId;
     }
 
-    public Long getOrderId() {
+    public java.util.UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(java.util.UUID orderId) {
         this.orderId = orderId;
     }
 
-    public Long getCustomerId() {
+    public java.util.UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(java.util.UUID customerId) {
         this.customerId = customerId;
     }
+
+    public java.util.UUID getProductId() { return productId; }
+    public void setProductId(java.util.UUID productId) { this.productId = productId; }
 
     public String getTariffCode() {
         return tariffCode;

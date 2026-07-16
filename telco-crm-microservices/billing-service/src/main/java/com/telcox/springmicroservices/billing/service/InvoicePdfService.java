@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -40,10 +41,10 @@ public class InvoicePdfService {
     private String bucketName;
 
     @Transactional(readOnly = true)
-    public void generateAndUploadInvoicePdf(Long invoiceId) {
+    public void generateAndUploadInvoicePdf(UUID invoiceId) {
         log.info("Starting PDF generation for invoice id: {}", invoiceId);
 
-        Optional<Invoice> invoiceOpt = invoiceRepository.findById(invoiceId);
+        Optional<Invoice> invoiceOpt = invoiceRepository.findByPublicId(invoiceId);
         if (invoiceOpt.isEmpty()) {
             log.error("Invoice with id {} not found for PDF generation", invoiceId);
             return;
@@ -80,7 +81,7 @@ public class InvoicePdfService {
                     "Email: support@telcox.com";
             metaTable.addCell(new Cell().add(new Paragraph(companyDetails)).setBorder(com.itextpdf.layout.borders.Border.NO_BORDER));
 
-            String invoiceNumStr = "Invoice ID: " + invoice.getId() + "\n" +
+            String invoiceNumStr = "Invoice ID: " + invoice.getPublicId() + "\n" +
                     "Due Date: " + invoice.getDueDate().toString().substring(0, 10) + "\n" +
                     "Subscription ID: " + invoice.getSubscriptionId() + "\n" +
                     "Status: " + invoice.getStatus().name() + "\n";
@@ -138,7 +139,7 @@ public class InvoicePdfService {
             log.info("PDF document successfully built for invoice id: {}", invoiceId);
 
             byte[] pdfBytes = out.toByteArray();
-            String s3Path = "invoices/" + invoice.getCustomerId() + "/" + invoice.getId() + ".pdf";
+            String s3Path = "invoices/" + invoice.getCustomerId() + "/" + invoice.getPublicId() + ".pdf";
 
             minioClient.putObject(
                     PutObjectArgs.builder()

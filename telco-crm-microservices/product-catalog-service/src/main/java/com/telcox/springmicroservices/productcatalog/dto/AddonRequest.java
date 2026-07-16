@@ -10,11 +10,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 import java.util.List;
+import java.util.UUID;
 
 public record AddonRequest(
         @NotBlank String code,
         @NotBlank String name,
-        @NotEmpty List<String> tariffCodes,
+        @NotEmpty List<UUID> tariffIds,
         @NotNull AddonType type,
         @NotNull @PositiveOrZero BigDecimal price,
         @PositiveOrZero Integer dataMb,
