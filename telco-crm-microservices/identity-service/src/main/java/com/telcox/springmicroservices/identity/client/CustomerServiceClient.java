@@ -33,7 +33,8 @@ public interface CustomerServiceClient {
      * Müşteri bulunamazsa veya KYC onaylı değilse customer-service 404 döner
      * ve Feign {@code FeignException.NotFound} fırlatır.
      *
-     * @param phone E.164 formatında telefon numarası (örn: 905001234567)
+     * @param phone customer-service'in yerel saklama formatındaki telefon numarası
+     *              (örn: 5001234567)
      * @return Müşterinin Keycloak bilgileri
      * @throws feign.FeignException.NotFound Müşteri bulunamazsa veya KYC onaylı değilse
      */
