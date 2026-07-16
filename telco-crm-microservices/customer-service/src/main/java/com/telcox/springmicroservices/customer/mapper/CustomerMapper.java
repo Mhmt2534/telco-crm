@@ -13,6 +13,7 @@ import org.mapstruct.Named;
 public interface CustomerMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "keycloakUserId", ignore = true)
     @Mapping(target = "internalKeycloakPassword", ignore = true)

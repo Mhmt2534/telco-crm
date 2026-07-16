@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
@@ -26,11 +27,15 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "public_id", nullable = false, unique = true, updatable = false)
+    @Builder.Default
+    private UUID publicId = UUID.randomUUID();
+
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
     @Column(name = "subscription_id")
-    private java.util.UUID subscriptionId;
+    private UUID subscriptionId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)

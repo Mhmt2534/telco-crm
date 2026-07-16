@@ -19,6 +19,7 @@ import org.mapstruct.ReportingPolicy;
 public interface OrderMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "totalAmount", ignore = true)
     @Mapping(target = "currency", ignore = true)
@@ -28,6 +29,7 @@ public interface OrderMapper {
     Order toEntity(OrderRequest request);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "order", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     OrderItem toEntity(OrderItemRequest request);

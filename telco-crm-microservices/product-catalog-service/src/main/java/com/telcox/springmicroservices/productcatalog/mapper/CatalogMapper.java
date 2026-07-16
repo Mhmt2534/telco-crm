@@ -14,6 +14,7 @@ import org.mapstruct.MappingTarget;
 public interface CatalogMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "effectiveTo", ignore = true)
@@ -24,6 +25,7 @@ public interface CatalogMapper {
     TariffResponse toResponse(Tariff tariff);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "effectiveTo", ignore = true)
