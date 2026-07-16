@@ -9,19 +9,23 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
 public class Payment extends BaseEntity {
 
-    @Column(name = "invoice_id", length = 100)
-    private String invoiceId;
+    @Column(name = "invoice_public_id")
+    private UUID invoiceId;
 
-    @Column(name = "order_id")
-    private Long orderId;
+    @Column(name = "order_public_id")
+    private UUID orderId;
 
-    @Column(name = "customer_id", length = 255)
-    private String customerId;
+    @Column(name = "customer_public_id")
+    private UUID customerId;
+
+    @Column(name = "actor_id", length = 255)
+    private String actorId;
 
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
@@ -52,29 +56,32 @@ public class Payment extends BaseEntity {
     public Payment() {
     }
 
-    public String getInvoiceId() {
+    public UUID getInvoiceId() {
         return invoiceId;
     }
 
-    public void setInvoiceId(String invoiceId) {
+    public void setInvoiceId(UUID invoiceId) {
         this.invoiceId = invoiceId;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 
-    public String getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
+
+    public String getActorId() { return actorId; }
+    public void setActorId(String actorId) { this.actorId = actorId; }
 
     public BigDecimal getAmount() {
         return amount;

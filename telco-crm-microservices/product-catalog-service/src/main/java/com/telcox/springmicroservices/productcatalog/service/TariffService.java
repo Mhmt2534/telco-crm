@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -68,18 +69,25 @@ public class TariffService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tariff not found"));
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "catalog", key = "'tariff:id:' + #publicId")
+    public Tariff getActiveTariff(UUID publicId) {
+        return tariffRepository.findByPublicIdAndStatus(publicId, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tariff not found"));
+    }
+
     @Transactional(noRollbackFor = ResponseStatusException.class)
     @Caching(evict = {
         @CacheEvict(cacheNames = "catalog", key = "'tariff:all'"),
-        @CacheEvict(cacheNames = "catalog", key = "'tariff:' + #code")
+        @CacheEvict(cacheNames = "catalog", allEntries = true)
     })
-    public Tariff updateTariff(String code, TariffRequest request) {
-        if (!code.equals(request.code())) {
+    public Tariff updateTariff(UUID publicId, TariffRequest request) {
+        Tariff activeTariff = tariffRepository.findByPublicIdAndStatus(publicId, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active tariff not found"));
+
+        if (!activeTariff.getCode().equals(request.code())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code değiştirilemez");
         }
-
-        Tariff activeTariff = tariffRepository.findByCodeAndStatus(code, CatalogStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active tariff not found"));
 
         if (activeTariff.getType() != request.type()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Type değiştirilemez");
@@ -115,10 +123,10 @@ public class TariffService {
     @Transactional
     @Caching(evict = {
         @CacheEvict(cacheNames = "catalog", key = "'tariff:all'"),
-        @CacheEvict(cacheNames = "catalog", key = "'tariff:' + #code")
+        @CacheEvict(cacheNames = "catalog", allEntries = true)
     })
-    public void deleteTariff(String code) {
-        Tariff activeTariff = tariffRepository.findByCodeAndStatus(code, CatalogStatus.ACTIVE)
+    public void deleteTariff(UUID publicId) {
+        Tariff activeTariff = tariffRepository.findByPublicIdAndStatus(publicId, CatalogStatus.ACTIVE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active tariff not found"));
         
         activeTariff.setStatus(CatalogStatus.DEPRECATED);
@@ -127,7 +135,9 @@ public class TariffService {
     }
 
     @Transactional(readOnly = true)
-    public List<Tariff> getTariffHistory(String code) {
-        return tariffRepository.findByCodeOrderByVersionDesc(code);
+    public List<Tariff> getTariffHistory(UUID publicId) {
+        Tariff tariff = tariffRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tariff not found"));
+        return tariffRepository.findByCodeOrderByVersionDesc(tariff.getCode());
     }
 }

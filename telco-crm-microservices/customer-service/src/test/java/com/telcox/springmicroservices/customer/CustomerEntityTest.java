@@ -41,6 +41,7 @@ class CustomerEntityTest {
 
         // then
         assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getPublicId()).isNotNull();
         assertThat(saved.getIdentityNumber()).isEqualTo("12345678901");
         
         // Soft delete test

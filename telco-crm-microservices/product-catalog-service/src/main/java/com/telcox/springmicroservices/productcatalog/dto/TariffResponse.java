@@ -5,9 +5,10 @@ import com.telcox.springmicroservices.productcatalog.domain.enums.TariffType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public record TariffResponse(
-        Long id,
+        UUID id,
         String code,
         Integer version,
         String name,

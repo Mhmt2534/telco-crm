@@ -23,6 +23,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -93,20 +94,21 @@ public class PaymentEventsConsumer {
     private void handlePaymentCompleted(String payloadStr) {
         try {
             PaymentCompletedPayload payload = objectMapper.readValue(payloadStr, PaymentCompletedPayload.class);
-            Long orderId = payload.getOrderId();
+            UUID orderId = payload.getOrderId();
 
             if (orderId == null) {
                 log.warn("Ignored PaymentCompleted message: orderId is null");
                 return;
             }
 
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            Optional<Order> orderOpt = orderRepository.findByPublicId(orderId);
             if (orderOpt.isEmpty()) {
                 log.warn("Ignored PaymentCompleted message: Order not found with ID {}", orderId);
                 return;
             }
 
             Order order = orderOpt.get();
+            Long internalOrderId = order.getId();
 
             // Idempotency check: Ignore if status is already PAID, FULFILLED or CANCELLED
             if (order.getStatus().ordinal() >= OrderStatus.PAID.ordinal()) {
@@ -114,7 +116,7 @@ public class PaymentEventsConsumer {
                 return;
             }
 
-            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(orderId);
+            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(internalOrderId);
             if (sagaOpt.isPresent()) {
                 SagaState sagaState = sagaOpt.get();
                 sagaState.setCurrentStep("STEP_2");
@@ -148,20 +150,21 @@ public class PaymentEventsConsumer {
     private void handlePaymentRefunded(String payloadStr) {
         try {
             PaymentRefundedPayload payload = objectMapper.readValue(payloadStr, PaymentRefundedPayload.class);
-            Long orderId = payload.getOrderId();
+            UUID orderId = payload.getOrderId();
 
             if (orderId == null) {
                 log.warn("Ignored PaymentRefunded message: orderId is null");
                 return;
             }
 
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            Optional<Order> orderOpt = orderRepository.findByPublicId(orderId);
             if (orderOpt.isEmpty()) {
                 log.warn("Ignored PaymentRefunded message: Order not found with ID {}", orderId);
                 return;
             }
 
             Order order = orderOpt.get();
+            Long internalOrderId = order.getId();
 
             // Idempotency check: Ignore if status is already CANCELLED
             if (order.getStatus() == OrderStatus.CANCELLED) {
@@ -169,7 +172,7 @@ public class PaymentEventsConsumer {
                 return;
             }
 
-            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(orderId);
+            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(internalOrderId);
             if (sagaOpt.isPresent()) {
                 SagaState sagaState = sagaOpt.get();
                 
@@ -196,20 +199,21 @@ public class PaymentEventsConsumer {
     private void handlePaymentFailed(String payloadStr) {
         try {
             PaymentFailedPayload payload = objectMapper.readValue(payloadStr, PaymentFailedPayload.class);
-            Long orderId = payload.getOrderId();
+            UUID orderId = payload.getOrderId();
 
             if (orderId == null) {
                 log.warn("Ignored PaymentFailed message: orderId is null");
                 return;
             }
 
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            Optional<Order> orderOpt = orderRepository.findByPublicId(orderId);
             if (orderOpt.isEmpty()) {
                 log.warn("Ignored PaymentFailed message: Order not found with ID {}", orderId);
                 return;
             }
 
             Order order = orderOpt.get();
+            Long internalOrderId = order.getId();
 
             // Idempotency check: Ignore if status is already CANCELLED
             if (order.getStatus() == OrderStatus.CANCELLED) {
@@ -217,7 +221,7 @@ public class PaymentEventsConsumer {
                 return;
             }
 
-            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(orderId);
+            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(internalOrderId);
             if (sagaOpt.isPresent()) {
                 SagaState sagaState = sagaOpt.get();
                 

@@ -1,24 +1,25 @@
 package com.telcox.springmicroservices.payment.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class WalletBalanceResponse {
-    private String customerId;
+    private UUID customerId;
     private BigDecimal balance;
 
     public WalletBalanceResponse() {
     }
 
-    public WalletBalanceResponse(String customerId, BigDecimal balance) {
+    public WalletBalanceResponse(UUID customerId, BigDecimal balance) {
         this.customerId = customerId;
         this.balance = balance;
     }
 
-    public String getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

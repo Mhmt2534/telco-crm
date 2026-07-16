@@ -19,6 +19,7 @@ import org.mapstruct.ReportingPolicy;
 public interface OrderMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "totalAmount", ignore = true)
     @Mapping(target = "currency", ignore = true)
@@ -28,13 +29,16 @@ public interface OrderMapper {
     Order toEntity(OrderRequest request);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publicId", ignore = true)
     @Mapping(target = "order", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     OrderItem toEntity(OrderItemRequest request);
 
+    @Mapping(target = "id", source = "publicId")
     @Mapping(target = "sagaState", ignore = true)
     OrderResponse toResponse(Order order);
 
+    @Mapping(target = "id", source = "publicId")
     OrderItemResponse toResponse(OrderItem item);
     
     // Helper default method to enrich response if sagaState is available later

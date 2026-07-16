@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.UUID;
 
 @Service
 public class WalletSecurityService {
@@ -27,7 +28,7 @@ public class WalletSecurityService {
         this.secretKey = secretKey;
     }
 
-    public String calculateHash(String customerId, BigDecimal balance) {
+    public String calculateHash(UUID customerId, BigDecimal balance) {
         if (customerId == null) {
             throw new IllegalArgumentException("customerId cannot be null");
         }

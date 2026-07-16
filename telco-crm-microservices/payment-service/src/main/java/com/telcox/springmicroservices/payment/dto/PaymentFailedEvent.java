@@ -2,10 +2,11 @@ package com.telcox.springmicroservices.payment.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public class PaymentFailedEvent {
-    private Long orderId;
-    private String customerId;
+    private UUID orderId;
+    private UUID customerId;
     private BigDecimal amount;
     private String errorCode;
     private String errorMessage;
@@ -14,7 +15,7 @@ public class PaymentFailedEvent {
     public PaymentFailedEvent() {
     }
 
-    public PaymentFailedEvent(Long orderId, String customerId, BigDecimal amount, String errorCode, String errorMessage, Instant occurredAt) {
+    public PaymentFailedEvent(UUID orderId, UUID customerId, BigDecimal amount, String errorCode, String errorMessage, Instant occurredAt) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.amount = amount;
@@ -23,19 +24,19 @@ public class PaymentFailedEvent {
         this.occurredAt = occurredAt;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 
-    public String getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

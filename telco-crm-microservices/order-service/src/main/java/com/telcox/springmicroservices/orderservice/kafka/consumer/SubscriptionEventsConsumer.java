@@ -22,6 +22,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -93,14 +94,14 @@ public class SubscriptionEventsConsumer {
     private void handleSubscriptionActivated(String payloadStr) {
         try {
             SubscriptionActivatedPayload payload = objectMapper.readValue(payloadStr, SubscriptionActivatedPayload.class);
-            Long orderId = payload.getOrderId();
+            UUID orderId = payload.getOrderId();
 
             if (orderId == null) {
                 log.warn("Ignored SubscriptionActivated message: orderId is null");
                 return;
             }
 
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            Optional<Order> orderOpt = orderRepository.findByPublicId(orderId);
             if (orderOpt.isEmpty()) {
                 log.warn("Ignored SubscriptionActivated message: Order not found with ID {}", orderId);
                 return;
@@ -125,20 +126,21 @@ public class SubscriptionEventsConsumer {
     private void handleSubscriptionActivationFailed(String payloadStr) {
         try {
             SubscriptionActivationFailedPayload payload = objectMapper.readValue(payloadStr, SubscriptionActivationFailedPayload.class);
-            Long orderId = payload.getOrderId();
+            UUID orderId = payload.getOrderId();
 
             if (orderId == null) {
                 log.warn("Ignored SubscriptionActivationFailed message: orderId is null");
                 return;
             }
 
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            Optional<Order> orderOpt = orderRepository.findByPublicId(orderId);
             if (orderOpt.isEmpty()) {
                 log.warn("Ignored SubscriptionActivationFailed message: Order not found with ID {}", orderId);
                 return;
             }
 
             Order order = orderOpt.get();
+            Long internalOrderId = order.getId();
 
             // Idempotency: If already COMPENSATING, COMPENSATED, or CANCELLED
             if (order.getStatus() == OrderStatus.CANCELLED) {
@@ -146,7 +148,7 @@ public class SubscriptionEventsConsumer {
                 return;
             }
 
-            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(orderId);
+            Optional<SagaState> sagaOpt = sagaStateRepository.findByOrderId(internalOrderId);
             if (sagaOpt.isPresent()) {
                 SagaState sagaState = sagaOpt.get();
                 
@@ -171,7 +173,7 @@ public class SubscriptionEventsConsumer {
                 sagaStateRepository.save(sagaState);
                 
                 // Publish PaymentRefundRequested
-                outboxEventPublisher.publishPaymentRefundRequested(orderId, paymentId, order.getTotalAmount());
+                outboxEventPublisher.publishPaymentRefundRequested(order.getPublicId(), paymentId, order.getTotalAmount());
                 log.info("Published PaymentRefundRequested for order ID {}, payment ID {}", orderId, paymentId);
             } else {
                  log.warn("SagaState not found for order ID {}", orderId);

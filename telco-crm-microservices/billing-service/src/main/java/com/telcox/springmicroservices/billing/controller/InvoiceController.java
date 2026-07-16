@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/invoices")
@@ -29,16 +30,16 @@ public class InvoiceController {
     private String bucketName;
 
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<Map<String, String>> getInvoicePdfUrl(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, String>> getInvoicePdfUrl(@PathVariable("id") UUID id) {
         log.info("Request received to get PDF URL for invoice id: {}", id);
 
-        Optional<Invoice> invoiceOpt = invoiceRepository.findById(id);
+        Optional<Invoice> invoiceOpt = invoiceRepository.findByPublicId(id);
         if (invoiceOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found");
         }
 
         Invoice invoice = invoiceOpt.get();
-        String s3Path = "invoices/" + invoice.getCustomerId() + "/" + invoice.getId() + ".pdf";
+        String s3Path = "invoices/" + invoice.getCustomerId() + "/" + invoice.getPublicId() + ".pdf";
 
         try {
             String url = minioClient.getPresignedObjectUrl(

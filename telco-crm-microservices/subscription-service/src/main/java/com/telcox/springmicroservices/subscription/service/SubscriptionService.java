@@ -68,7 +68,7 @@ public class SubscriptionService {
         // =========================================================
         // 🚨 TEST TUZAĞI BAŞLANGICI 🚨
         // =========================================================
-        if (request.customerId() != null && request.customerId() == 999L) {
+        if (request.customerId() != null && request.customerId().toString().endsWith("0999")) {
             log.error("🚨 TEST TUZAĞI TETİKLENDİ! Müşteri 999 için aktivasyon bilerek patlatılıyor.");
             throw new RuntimeException("Simüle edilmiş altyapı hatası (Müşteri 999)");
         }
@@ -84,6 +84,7 @@ public class SubscriptionService {
         subscription.setCustomerId(request.customerId());
         subscription.setMsisdn(msisdn);
         subscription.setTariffCode(request.tariffCode());
+        subscription.setTariffId(request.tariffId());
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setActivatedAt(Instant.now());
 
@@ -106,6 +107,7 @@ public class SubscriptionService {
             SubscriptionActivatedEvent activatedDto = new SubscriptionActivatedEvent(
                     request.orderId(),
                     subscription.getId(),
+                    subscription.getCustomerId(),
                     subscription.getMsisdn(),
                     subscription.getStatus().name()
             );
@@ -208,6 +210,7 @@ public class SubscriptionService {
                 subscription.getCustomerId(),
                 subscription.getMsisdn(),
                 subscription.getTariffCode(),
+                subscription.getTariffId(),
                 subscription.getStatus(),
                 subscription.getActivatedAt(),
                 subscription.getTerminatedAt(),
@@ -215,7 +218,7 @@ public class SubscriptionService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void publishActivationFailedEvent(Long orderId, String reason) {
+    public void publishActivationFailedEvent(UUID orderId, String reason) {
         try {
             OutboxEvent failedEvent = new OutboxEvent();
             failedEvent.setEventId(UUID.randomUUID());
@@ -266,8 +269,14 @@ public class SubscriptionService {
 
             // We can reuse SubscriptionActivatedEvent or just write a simple map as payload.
             // Using a structured JSON for the outbox
-            String payload = String.format("{\"orderId\":%d,\"subscriptionId\":\"%s\",\"addonCode\":\"%s\",\"msisdn\":\"%s\",\"status\":\"ACTIVATED\"}",
-                    event.getOrderId(), subscription.getId(), event.getTariffCode(), subscription.getMsisdn());
+            String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                    "orderId", event.getOrderId(),
+                    "subscriptionId", subscription.getId(),
+                    "customerId", subscription.getCustomerId(),
+                    "addonId", event.getProductId(),
+                    "addonCode", event.getTariffCode(),
+                    "msisdn", subscription.getMsisdn(),
+                    "status", "ACTIVATED"));
             
             addonActivatedEvent.setPayload(payload);
             addonActivatedEvent.setStatus(OutboxStatus.PENDING);
@@ -301,6 +310,7 @@ public class SubscriptionService {
 
         log.info("[SUBSCRIPTION] Abonelik bulundu. Mevcut tarife: {}, Yeni tarife: {}", subscription.getTariffCode(), event.getNewTariffCode());
         subscription.setTariffCode(event.getNewTariffCode());
+        subscription.setTariffId(event.getNewTariffId());
         subscriptionRepository.save(subscription);
 
         log.info("[SUBSCRIPTION] Tarife başarıyla güncellendi. OrderId: {}", event.getOrderId());

@@ -22,13 +22,13 @@ public class InvoiceGeneratedConsumer {
                                      @Header(value = "eventType", required = false) String eventType) {
         log.info("Received invoice event: type={}, payload={}", eventType, messagePayload);
 
-        if ("InvoiceGeneratedEvent".equals(eventType)) {
+        if ("InvoiceGenerated".equals(eventType)) {
             try {
                 JsonNode json = objectMapper.readTree(messagePayload);
                 if (json.isTextual()) {
                     json = objectMapper.readTree(json.asText());
                 }
-                Long invoiceId = json.get("invoiceId").asLong();
+                java.util.UUID invoiceId = java.util.UUID.fromString(json.get("invoiceId").asText());
                 log.info("Triggering PDF generation for invoice: {}", invoiceId);
                 invoicePdfService.generateAndUploadInvoicePdf(invoiceId);
             } catch (Exception e) {

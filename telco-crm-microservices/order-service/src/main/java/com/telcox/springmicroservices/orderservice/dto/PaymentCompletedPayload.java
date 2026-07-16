@@ -15,5 +15,5 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentCompletedPayload {
     private UUID paymentId;
-    private Long orderId;
+    private UUID orderId;
 }

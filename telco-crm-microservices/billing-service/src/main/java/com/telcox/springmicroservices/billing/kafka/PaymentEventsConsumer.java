@@ -87,22 +87,16 @@ public class PaymentEventsConsumer {
 
             PaymentCompletedEvent event = objectMapper.readValue(payloadStr, PaymentCompletedEvent.class);
 
-            if (event.getInvoiceId() == null || event.getInvoiceId().trim().isEmpty()) {
+            if (event.getInvoiceId() == null) {
                 log.info("Ignoring PaymentCompleted event with no invoiceId (likely an order payment)");
                 return;
             }
 
             log.info("Processing PaymentCompleted for invoiceId: {}", event.getInvoiceId());
 
-            Long invoiceId;
-            try {
-                invoiceId = Long.parseLong(event.getInvoiceId());
-            } catch (NumberFormatException e) {
-                log.error("Failed to parse invoiceId: {} to Long", event.getInvoiceId());
-                return;
-            }
+            UUID invoiceId = event.getInvoiceId();
 
-            Optional<Invoice> invoiceOpt = invoiceRepository.findById(invoiceId);
+            Optional<Invoice> invoiceOpt = invoiceRepository.findByPublicId(invoiceId);
             if (invoiceOpt.isEmpty()) {
                 log.warn("Invoice not found with ID {}", invoiceId);
                 return;
@@ -121,7 +115,7 @@ public class PaymentEventsConsumer {
 
             // 2. Prepare Outbox Event Payload
             Map<String, Object> payloadMap = new HashMap<>();
-            payloadMap.put("invoiceId", invoice.getId());
+            payloadMap.put("invoiceId", invoice.getPublicId());
             payloadMap.put("customerId", invoice.getCustomerId());
             payloadMap.put("subscriptionId", invoice.getSubscriptionId());
             payloadMap.put("amount", invoice.getAmount());
@@ -134,13 +128,13 @@ public class PaymentEventsConsumer {
             OutboxEvent outboxEvent = new OutboxEvent();
             outboxEvent.setId(UUID.randomUUID());
             outboxEvent.setAggregateType("invoice");
-            outboxEvent.setAggregateId(String.valueOf(invoice.getId()));
-            outboxEvent.setType("InvoicePaidEvent");
+            outboxEvent.setAggregateId(invoice.getPublicId().toString());
+            outboxEvent.setType("InvoicePaid");
             outboxEvent.setPayload(payloadJson);
             outboxEvent.setStatus(OutboxStatus.PENDING);
 
             outboxEventRepository.save(outboxEvent);
-            log.info("InvoicePaidEvent outbox event generated for invoiceId: {}", invoice.getId());
+            log.info("InvoicePaid event generated for invoiceId: {}", invoice.getPublicId());
 
         } catch (Exception ex) {
             log.error("Failed to process PaymentCompleted Kafka message: {}", message, ex);

@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,8 +27,8 @@ public class CustomerService {
     private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
-    public void approveKyc(Long id) {
-        Customer customer = customerRepository.findById(id)
+    public void approveKyc(UUID id) {
+        Customer customer = customerRepository.findByPublicId(id)
                 .orElseThrow(() -> new com.telcox.common.core.exception.ResourceNotFoundException("Müşteri bulunamadı: " + id));
 
         if (customer.getStatus() != com.telcox.springmicroservices.customer.domain.enums.CustomerStatus.PENDING) {
@@ -54,7 +56,7 @@ public class CustomerService {
 
         // Create Outbox Event
         com.telcox.springmicroservices.customer.domain.events.CustomerKYCApprovedEvent eventPayload = com.telcox.springmicroservices.customer.domain.events.CustomerKYCApprovedEvent.builder()
-                .customerId(customer.getId())
+                .customerId(customer.getPublicId())
                 .phone(customer.getPhone())
                 .keycloakUserId(keycloakUserId)
                 .timestamp(java.time.Instant.now().toString())
@@ -63,12 +65,12 @@ public class CustomerService {
         try {
             com.telcox.springmicroservices.customer.domain.OutboxEvent outboxEvent = new com.telcox.springmicroservices.customer.domain.OutboxEvent();
             outboxEvent.setAggregateType("Customer");
-            outboxEvent.setAggregateId(String.valueOf(customer.getId()));
+            outboxEvent.setAggregateId(customer.getPublicId().toString());
             outboxEvent.setEventType("CustomerKYCApproved");
             outboxEvent.setPayload(objectMapper.writeValueAsString(eventPayload));
 
             outboxEventRepository.save(outboxEvent);
-            log.info("KYC onaylandı ve Keycloak kullanıcısı oluşturuldu. Müşteri ID: {}", customer.getId());
+            log.info("KYC onaylandı ve Keycloak kullanıcısı oluşturuldu. Müşteri public ID: {}", customer.getPublicId());
             outboxEventPublisher.publishCustomerUpdated(customer, "KYC_APPROVED");
         } catch (Exception e) {
             throw new RuntimeException("Event serialize edilemedi", e);
@@ -97,22 +99,22 @@ public class CustomerService {
         }
 
         Customer savedCustomer = customerRepository.save(customer);
-        log.info("Müşteri başarıyla kaydedildi. Müşteri ID: {}", savedCustomer.getId());
+        log.info("Müşteri başarıyla kaydedildi. Müşteri public ID: {}", savedCustomer.getPublicId());
         outboxEventPublisher.publishCustomerRegistered(savedCustomer);
 
         return customerMapper.toResponse(savedCustomer);
     }
 
     @Transactional(readOnly = true)
-    public CustomerResponse getCustomerById(Long id) {
-        Customer customer = customerRepository.findById(id)
+    public CustomerResponse getCustomerById(UUID id) {
+        Customer customer = customerRepository.findByPublicId(id)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + id));
         return customerMapper.toResponse(customer);
     }
 
     @Transactional
-    public CustomerResponse updateCustomer(Long id, com.telcox.springmicroservices.customer.dto.CustomerUpdateRequest request) {
-        Customer customer = customerRepository.findById(id)
+    public CustomerResponse updateCustomer(UUID id, com.telcox.springmicroservices.customer.dto.CustomerUpdateRequest request) {
+        Customer customer = customerRepository.findByPublicId(id)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + id));
 
         if (request.getIdentityNumber() != null || request.getPhone() != null) {
@@ -137,8 +139,8 @@ public class CustomerService {
     }
 
     @Transactional
-    public void deleteCustomer(Long id) {
-        Customer customer = customerRepository.findById(id)
+    public void deleteCustomer(UUID id) {
+        Customer customer = customerRepository.findByPublicId(id)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Müşteri bulunamadı: " + id));
         customer.setDeleted(true);
         customerRepository.save(customer);

@@ -6,9 +6,11 @@ import java.util.UUID;
 
 public class TariffChangeRequestedEvent {
 
-    private Long orderId;
+    private UUID orderId;
     private UUID subscriptionId;
-    private Long customerId;
+    private UUID customerId;
+    private UUID oldTariffId;
+    private UUID newTariffId;
     private String oldTariffCode;
     private String newTariffCode;
     private BigDecimal priceDiff;
@@ -18,7 +20,7 @@ public class TariffChangeRequestedEvent {
     public TariffChangeRequestedEvent() {
     }
 
-    public TariffChangeRequestedEvent(Long orderId, UUID subscriptionId, Long customerId,
+    public TariffChangeRequestedEvent(UUID orderId, UUID subscriptionId, UUID customerId,
                                       String oldTariffCode, String newTariffCode, BigDecimal priceDiff,
                                       String effectiveBillCycle, Instant occurredAt) {
         this.orderId = orderId;
@@ -31,11 +33,11 @@ public class TariffChangeRequestedEvent {
         this.occurredAt = occurredAt;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 
@@ -47,13 +49,18 @@ public class TariffChangeRequestedEvent {
         this.subscriptionId = subscriptionId;
     }
 
-    public Long getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
+
+    public UUID getOldTariffId() { return oldTariffId; }
+    public void setOldTariffId(UUID oldTariffId) { this.oldTariffId = oldTariffId; }
+    public UUID getNewTariffId() { return newTariffId; }
+    public void setNewTariffId(UUID newTariffId) { this.newTariffId = newTariffId; }
 
     public String getOldTariffCode() {
         return oldTariffCode;

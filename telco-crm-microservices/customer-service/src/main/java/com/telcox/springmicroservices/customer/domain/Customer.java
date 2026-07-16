@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "customer")
@@ -29,6 +30,10 @@ public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "public_id", nullable = false, unique = true, updatable = false)
+    @Builder.Default
+    private UUID publicId = UUID.randomUUID();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

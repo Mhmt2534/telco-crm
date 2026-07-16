@@ -19,8 +19,6 @@ import java.math.BigDecimal;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,8 +50,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponse initiatePayment(PaymentRequest request, String idempotencyKey, String customerId) {
-        log.info("Initiating payment for Invoice ID: {}, Customer ID: {}", request.getInvoiceId(), customerId);
+    public PaymentResponse initiatePayment(PaymentRequest request, String idempotencyKey, String actorId) {
+        UUID customerId = request.getCustomerId();
+        log.info("Initiating payment for Invoice ID: {}, Customer ID: {}, Actor ID: {}", request.getInvoiceId(), customerId, actorId);
 
         String cachedResponse = idempotencyService.processIdempotency(idempotencyKey);
         if (cachedResponse != null) {
@@ -78,6 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
             Payment payment = new Payment();
             payment.setInvoiceId(request.getInvoiceId());
             payment.setCustomerId(customerId);
+            payment.setActorId(actorId);
             payment.setOrderId(request.getOrderId());
             payment.setAmount(request.getAmount());
             payment.setCurrency(request.getCurrency());
@@ -88,8 +88,7 @@ public class PaymentServiceImpl implements PaymentService {
             attempt.setAttemptNo(1);
             attempt.setAttemptedAt(OffsetDateTime.now());
 
-            boolean isFailed = request.getInvoiceId() != null &&
-                    (request.getInvoiceId().startsWith("FAIL_") || request.getInvoiceId().equals("114") || request.getInvoiceId().equals("555"));
+            boolean isFailed = payment.getExternalRef() != null && payment.getExternalRef().startsWith("FAIL_");
 
             BigDecimal amountToPay = request.getAmount();
             BigDecimal walletDeduction = BigDecimal.ZERO;
@@ -179,12 +178,9 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void emitPaymentCompletedEvent(Payment payment) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("paymentId", payment.getId());
-        payload.put("invoiceId", payment.getInvoiceId());
-        payload.put("amount", payment.getAmount());
-        payload.put("currency", payment.getCurrency());
-        payload.put("paidAt", payment.getPaidAt() != null ? payment.getPaidAt().toString() : null);
+        PaymentCompletedEvent payload = new PaymentCompletedEvent(
+                payment.getId(), payment.getOrderId(), payment.getInvoiceId(), payment.getCustomerId(),
+                payment.getAmount(), payment.getPaidAt() != null ? payment.getPaidAt().toInstant() : Instant.now());
 
         String payloadJson;
         try {
@@ -222,6 +218,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = new Payment();
         payment.setOrderId(event.getOrderId());
+        payment.setCustomerId(event.getCustomerId());
         payment.setAmount(event.getTotalAmount());
         payment.setCurrency("TRY");
         payment.setMethod(PaymentMethod.CARD);
@@ -231,7 +228,7 @@ public class PaymentServiceImpl implements PaymentService {
         attempt.setAttemptNo(1);
         attempt.setAttemptedAt(OffsetDateTime.now());
 
-        boolean isFailedCustomer = event.getCustomerId() != null && event.getCustomerId().equals("999");
+        boolean isFailedCustomer = event.getCustomerId() != null && event.getCustomerId().toString().endsWith("0999");
         String eventPayloadJson;
         String eventType;
 
@@ -256,6 +253,7 @@ public class PaymentServiceImpl implements PaymentService {
             PaymentCompletedEvent completedEvent = new PaymentCompletedEvent(
                     payment.getId(),
                     event.getOrderId(),
+                    null,
                     event.getCustomerId(),
                     event.getTotalAmount(),
                     Instant.now());
@@ -334,7 +332,7 @@ public class PaymentServiceImpl implements PaymentService {
     
     @Override
     @Transactional
-    public WalletBalanceResponse topUpWallet(String customerId, WalletTopUpRequest request) {
+    public WalletBalanceResponse topUpWallet(UUID customerId, WalletTopUpRequest request) {
         Wallet wallet = walletRepository.findByCustomerId(customerId).orElseGet(() -> {
             Wallet newWallet = new Wallet();
             newWallet.setCustomerId(customerId);
@@ -358,7 +356,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public WalletBalanceResponse getWalletBalance(String customerId) {
+    public WalletBalanceResponse getWalletBalance(UUID customerId) {
         Optional<Wallet> walletOpt = walletRepository.findByCustomerId(customerId);
         if (walletOpt.isEmpty()) {
             return new WalletBalanceResponse(customerId, BigDecimal.ZERO);

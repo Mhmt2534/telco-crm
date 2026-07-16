@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/addons")
@@ -31,32 +32,32 @@ public class AddonController {
 
     @GetMapping
     public ResponseEntity<Page<AddonResponse>> getActiveAddons(
-            @RequestParam(required = false) String tariffCode, Pageable pageable) {
-        Page<AddonResponse> page = addonService.getActiveAddons(tariffCode, pageable).map(catalogMapper::toResponse);
+            @RequestParam(required = false) UUID tariffId, Pageable pageable) {
+        Page<AddonResponse> page = addonService.getActiveAddons(tariffId, pageable).map(catalogMapper::toResponse);
         return ResponseEntity.ok(page);
     }
 
-    @GetMapping("/{code}")
-    public ResponseEntity<AddonResponse> getActiveAddon(@PathVariable String code) {
-        Addon active = addonService.getActiveAddonByCode(code);
+    @GetMapping("/{id}")
+    public ResponseEntity<AddonResponse> getActiveAddon(@PathVariable UUID id) {
+        Addon active = addonService.getActiveAddon(id);
         return ResponseEntity.ok(catalogMapper.toResponse(active));
     }
 
-    @PutMapping("/{code}")
-    public ResponseEntity<AddonResponse> updateAddon(@PathVariable String code, @Valid @RequestBody AddonRequest request) {
-        Addon updated = addonService.updateAddon(code, request);
+    @PutMapping("/{id}")
+    public ResponseEntity<AddonResponse> updateAddon(@PathVariable UUID id, @Valid @RequestBody AddonRequest request) {
+        Addon updated = addonService.updateAddon(id, request);
         return ResponseEntity.ok(catalogMapper.toResponse(updated));
     }
 
-    @DeleteMapping("/{code}")
-    public ResponseEntity<Void> deleteAddon(@PathVariable String code) {
-        addonService.deleteAddon(code);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAddon(@PathVariable UUID id) {
+        addonService.deleteAddon(id);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{code}/history")
-    public ResponseEntity<List<AddonResponse>> getAddonHistory(@PathVariable String code) {
-        List<AddonResponse> history = addonService.getAddonHistory(code).stream()
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<AddonResponse>> getAddonHistory(@PathVariable UUID id) {
+        List<AddonResponse> history = addonService.getAddonHistory(id).stream()
                 .map(catalogMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(history);

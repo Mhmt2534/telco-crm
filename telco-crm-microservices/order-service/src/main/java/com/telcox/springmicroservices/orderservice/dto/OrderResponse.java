@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -17,8 +18,8 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderResponse {
 
-    private Long id;
-    private Long customerId;
+    private UUID id;
+    private UUID customerId;
     private OrderStatus status;
     private BigDecimal totalAmount;
     private String currency;

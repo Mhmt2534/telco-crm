@@ -96,6 +96,7 @@ public class OrderEventsConsumer {
             } else {
                 CreateSubscriptionRequest request = new CreateSubscriptionRequest(
                         event.getCustomerId(),
+                        event.getProductId(),
                         event.getTariffCode(),
                         event.getOrderId());
                 

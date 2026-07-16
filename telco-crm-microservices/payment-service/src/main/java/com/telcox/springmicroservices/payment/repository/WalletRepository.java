@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface WalletRepository extends JpaRepository<Wallet, UUID> {
-    Optional<Wallet> findByCustomerId(String customerId);
+    Optional<Wallet> findByCustomerId(UUID customerId);
 }

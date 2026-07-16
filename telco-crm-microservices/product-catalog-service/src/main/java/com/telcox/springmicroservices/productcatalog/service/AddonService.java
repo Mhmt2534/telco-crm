@@ -22,6 +22,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -45,9 +48,9 @@ public class AddonService {
 
         Addon savedAddon = addonRepository.save(addon);
 
-        for (String tariffCode : request.tariffCodes()) {
-            Tariff activeTariff = tariffRepository.findByCodeAndStatus(tariffCode, CatalogStatus.ACTIVE)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif tarife bulunamadı: " + tariffCode));
+        for (UUID tariffId : request.tariffIds()) {
+            Tariff activeTariff = tariffRepository.findByPublicIdAndStatus(tariffId, CatalogStatus.ACTIVE)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif tarife bulunamadı: " + tariffId));
             
             TariffAddonId id = new TariffAddonId(activeTariff.getId(), savedAddon.getId());
             TariffAddon tariffAddon = TariffAddon.builder()
@@ -62,9 +65,9 @@ public class AddonService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Addon> getActiveAddons(String tariffCode, Pageable pageable) {
-        if (tariffCode != null && !tariffCode.isBlank()) {
-            Tariff activeTariff = tariffRepository.findByCodeAndStatus(tariffCode, CatalogStatus.ACTIVE)
+    public Page<Addon> getActiveAddons(UUID tariffId, Pageable pageable) {
+        if (tariffId != null) {
+            Tariff activeTariff = tariffRepository.findByPublicIdAndStatus(tariffId, CatalogStatus.ACTIVE)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active tariff not found"));
             
             List<Addon> addons = tariffAddonRepository.findByTariffId(activeTariff.getId())
@@ -91,14 +94,20 @@ public class AddonService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Addon not found"));
     }
 
+    @Transactional(readOnly = true)
+    public Addon getActiveAddon(UUID publicId) {
+        return addonRepository.findByPublicIdAndStatus(publicId, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Addon not found"));
+    }
+
     @Transactional
-    public Addon updateAddon(String code, AddonRequest request) {
-        if (!code.equals(request.code())) {
+    public Addon updateAddon(UUID publicId, AddonRequest request) {
+        Addon activeAddon = addonRepository.findByPublicIdAndStatus(publicId, CatalogStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active addon not found"));
+
+        if (!activeAddon.getCode().equals(request.code())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code değiştirilemez");
         }
-
-        Addon activeAddon = addonRepository.findByCodeAndStatus(code, CatalogStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active addon not found"));
 
         if (activeAddon.getType() != request.type()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Type değiştirilemez");
@@ -115,7 +124,9 @@ public class AddonService {
         Addon savedNewAddon = addonRepository.save(newAddon);
 
         List<TariffAddon> oldRelations = tariffAddonRepository.findByAddonId(activeAddon.getId());
-        List<String> oldTariffCodes = oldRelations.stream().map(r -> r.getTariff().getCode()).toList();
+        Set<UUID> oldTariffIds = oldRelations.stream()
+                .map(r -> r.getTariff().getPublicId())
+                .collect(Collectors.toSet());
 
         for (TariffAddon oldRelation : oldRelations) {
             TariffAddonId newId = new TariffAddonId(oldRelation.getTariff().getId(), savedNewAddon.getId());
@@ -127,10 +138,10 @@ public class AddonService {
             tariffAddonRepository.save(newTariffAddon);
         }
 
-        for (String tariffCode : request.tariffCodes()) {
-            if (!oldTariffCodes.contains(tariffCode)) {
-                Tariff activeTariff = tariffRepository.findByCodeAndStatus(tariffCode, CatalogStatus.ACTIVE)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif tarife bulunamadı: " + tariffCode));
+        for (UUID tariffId : request.tariffIds()) {
+            if (!oldTariffIds.contains(tariffId)) {
+                Tariff activeTariff = tariffRepository.findByPublicIdAndStatus(tariffId, CatalogStatus.ACTIVE)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif tarife bulunamadı: " + tariffId));
                 TariffAddonId id = new TariffAddonId(activeTariff.getId(), savedNewAddon.getId());
                 TariffAddon newTariffAddon = TariffAddon.builder()
                         .id(id)
@@ -145,8 +156,8 @@ public class AddonService {
     }
 
     @Transactional
-    public void deleteAddon(String code) {
-        Addon activeAddon = addonRepository.findByCodeAndStatus(code, CatalogStatus.ACTIVE)
+    public void deleteAddon(UUID publicId) {
+        Addon activeAddon = addonRepository.findByPublicIdAndStatus(publicId, CatalogStatus.ACTIVE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active addon not found"));
         
         activeAddon.setStatus(CatalogStatus.DEPRECATED);
@@ -155,18 +166,20 @@ public class AddonService {
     }
 
     @Transactional(readOnly = true)
-    public List<Addon> getAddonHistory(String code) {
-        return addonRepository.findByCodeOrderByVersionDesc(code);
+    public List<Addon> getAddonHistory(UUID publicId) {
+        Addon addon = addonRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Addon not found"));
+        return addonRepository.findByCodeOrderByVersionDesc(addon.getCode());
     }
 
     @Transactional
-    public void addAddonsToTariff(String tariffCode, List<String> addonCodes) {
-        Tariff activeTariff = tariffRepository.findByCodeAndStatus(tariffCode, CatalogStatus.ACTIVE)
+    public void addAddonsToTariff(UUID tariffId, List<UUID> addonIds) {
+        Tariff activeTariff = tariffRepository.findByPublicIdAndStatus(tariffId, CatalogStatus.ACTIVE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active tariff not found"));
 
-        for (String addonCode : addonCodes) {
-            Addon activeAddon = addonRepository.findByCodeAndStatus(addonCode, CatalogStatus.ACTIVE)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif olmayan tarife veya ek paketlere işlem yapılamaz: " + addonCode));
+        for (UUID addonId : addonIds) {
+            Addon activeAddon = addonRepository.findByPublicIdAndStatus(addonId, CatalogStatus.ACTIVE)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aktif olmayan ek pakete işlem yapılamaz: " + addonId));
             
             TariffAddonId id = new TariffAddonId(activeTariff.getId(), activeAddon.getId());
             if (!tariffAddonRepository.existsById(id)) {

@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/tariffs")
@@ -53,35 +54,35 @@ public class TariffController {
         return ResponseEntity.ok(page);
     }
 
-    @GetMapping("/{code}")
-    public ResponseEntity<TariffResponse> getActiveTariff(@PathVariable String code) {
-        Tariff active = tariffService.getActiveTariffByCode(code);
+    @GetMapping("/{id}")
+    public ResponseEntity<TariffResponse> getActiveTariff(@PathVariable UUID id) {
+        Tariff active = tariffService.getActiveTariff(id);
         return ResponseEntity.ok(catalogMapper.toResponse(active));
     }
 
-    @PutMapping("/{code}")
-    public ResponseEntity<TariffResponse> updateTariff(@PathVariable String code, @Valid @RequestBody TariffRequest request) {
-        Tariff updated = tariffService.updateTariff(code, request);
+    @PutMapping("/{id}")
+    public ResponseEntity<TariffResponse> updateTariff(@PathVariable UUID id, @Valid @RequestBody TariffRequest request) {
+        Tariff updated = tariffService.updateTariff(id, request);
         return ResponseEntity.ok(catalogMapper.toResponse(updated));
     }
 
-    @DeleteMapping("/{code}")
-    public ResponseEntity<Void> deleteTariff(@PathVariable String code) {
-        tariffService.deleteTariff(code);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTariff(@PathVariable UUID id) {
+        tariffService.deleteTariff(id);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{code}/history")
-    public ResponseEntity<List<TariffResponse>> getTariffHistory(@PathVariable String code) {
-        List<TariffResponse> history = tariffService.getTariffHistory(code).stream()
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<TariffResponse>> getTariffHistory(@PathVariable UUID id) {
+        List<TariffResponse> history = tariffService.getTariffHistory(id).stream()
                 .map(catalogMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(history);
     }
 
-    @PostMapping("/{code}/addons")
-    public ResponseEntity<Void> addAddonsToTariff(@PathVariable String code, @Valid @RequestBody TariffAddonRequest request) {
-        addonService.addAddonsToTariff(code, request.addonCodes());
+    @PostMapping("/{id}/addons")
+    public ResponseEntity<Void> addAddonsToTariff(@PathVariable UUID id, @Valid @RequestBody TariffAddonRequest request) {
+        addonService.addAddonsToTariff(id, request.addonIds());
         return ResponseEntity.ok().build();
     }
 }

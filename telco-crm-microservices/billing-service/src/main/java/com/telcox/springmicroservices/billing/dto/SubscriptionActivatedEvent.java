@@ -7,7 +7,7 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SubscriptionActivatedEvent {
     private UUID subscriptionId; // Bu asıl subscriptionId
-    private Long customerId;
+    private UUID customerId;
     private String msisdn;
     private String tariffCode;
     private String status;
@@ -15,7 +15,7 @@ public class SubscriptionActivatedEvent {
 
     public SubscriptionActivatedEvent() {}
 
-    public SubscriptionActivatedEvent(UUID subscriptionId, Long customerId, String msisdn, String tariffCode, String status, Instant activatedAt) {
+    public SubscriptionActivatedEvent(UUID subscriptionId, UUID customerId, String msisdn, String tariffCode, String status, Instant activatedAt) {
         this.subscriptionId = subscriptionId;
         this.customerId = customerId;
         this.msisdn = msisdn;
@@ -27,8 +27,8 @@ public class SubscriptionActivatedEvent {
     public UUID getSubscriptionId() { return subscriptionId; }
     public void setSubscriptionId(UUID subscriptionId) { this.subscriptionId = subscriptionId; }
 
-    public Long getCustomerId() { return customerId; }
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 
     public String getMsisdn() { return msisdn; }
     public void setMsisdn(String msisdn) { this.msisdn = msisdn; }

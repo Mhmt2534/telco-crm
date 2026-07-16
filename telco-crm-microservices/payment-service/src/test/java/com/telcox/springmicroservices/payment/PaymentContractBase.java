@@ -108,8 +108,8 @@ public abstract class PaymentContractBase {
     public void triggerPaymentCompleted() throws Exception {
         // 1. Simulate the input event that triggers the payment process
         OrderCreatedEvent orderEvent = new OrderCreatedEvent();
-        orderEvent.setOrderId(1L);
-        orderEvent.setCustomerId("12345");
+        orderEvent.setOrderId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        orderEvent.setCustomerId(java.util.UUID.fromString("00000000-0000-0000-0000-000000012345"));
         orderEvent.setTotalAmount(new BigDecimal("100.00"));
 
         // 2. Call the real business logic

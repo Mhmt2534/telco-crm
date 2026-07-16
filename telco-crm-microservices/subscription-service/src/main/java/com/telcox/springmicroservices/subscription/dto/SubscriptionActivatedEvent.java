@@ -3,8 +3,9 @@ package com.telcox.springmicroservices.subscription.dto;
 import java.util.UUID;
 
 public record SubscriptionActivatedEvent(
-        Long orderId,
+        UUID orderId,
         UUID subscriptionId,
+        UUID customerId,
         String msisdn,
         String status
 ) {}

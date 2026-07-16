@@ -5,13 +5,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Entity
 @Table(name = "wallets")
 public class Wallet extends BaseEntity {
 
-    @Column(name = "customer_id", nullable = false, unique = true, length = 255)
-    private String customerId;
+    @Column(name = "customer_public_id", nullable = false, unique = true)
+    private UUID customerId;
 
     @Column(name = "balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
@@ -22,17 +23,17 @@ public class Wallet extends BaseEntity {
     public Wallet() {
     }
 
-    public Wallet(String customerId, BigDecimal balance, String balanceHash) {
+    public Wallet(UUID customerId, BigDecimal balance, String balanceHash) {
         this.customerId = customerId;
         this.balance = balance;
         this.balanceHash = balanceHash;
     }
 
-    public String getCustomerId() {
+    public UUID getCustomerId() {
         return customerId;
     }
 
-    public void setCustomerId(String customerId) {
+    public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
     }
 

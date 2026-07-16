@@ -5,9 +5,10 @@ import com.telcox.springmicroservices.productcatalog.domain.enums.CatalogStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public record AddonResponse(
-        Long id,
+        UUID id,
         String code,
         Integer version,
         String name,

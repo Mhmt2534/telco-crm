@@ -17,8 +17,9 @@ Contract.make {
         // The expected payload
         body(
                 paymentId: $(regex(uuid())),
-                orderId: 1L,
-                customerId: "12345",
+                orderId: "00000000-0000-0000-0000-000000000001",
+                invoiceId: null,
+                customerId: "00000000-0000-0000-0000-000000012345",
                 amount: 100.00,
                 occurredAt: $(consumer('2026-01-01T10:00:00Z'), producer(regex('.*')))
         )

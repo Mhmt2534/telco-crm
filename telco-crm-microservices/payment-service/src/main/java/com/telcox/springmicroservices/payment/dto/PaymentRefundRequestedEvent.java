@@ -8,22 +8,22 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentRefundRequestedEvent {
-    private Long orderId;
+    private UUID orderId;
     private UUID paymentId;
     private BigDecimal amount;
     private Instant occurredAt;
 
     public PaymentRefundRequestedEvent() {}
 
-    public PaymentRefundRequestedEvent(Long orderId, UUID paymentId, BigDecimal amount, Instant occurredAt) {
+    public PaymentRefundRequestedEvent(UUID orderId, UUID paymentId, BigDecimal amount, Instant occurredAt) {
         this.orderId = orderId;
         this.paymentId = paymentId;
         this.amount = amount;
         this.occurredAt = occurredAt;
     }
 
-    public Long getOrderId() { return orderId; }
-    public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public UUID getOrderId() { return orderId; }
+    public void setOrderId(UUID orderId) { this.orderId = orderId; }
 
     public UUID getPaymentId() { return paymentId; }
     public void setPaymentId(UUID paymentId) { this.paymentId = paymentId; }

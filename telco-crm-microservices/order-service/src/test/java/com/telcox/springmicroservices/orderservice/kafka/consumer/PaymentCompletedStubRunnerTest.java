@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",
         "spring.flyway.enabled=false",
         "spring.jpa.hibernate.ddl-auto=update",
-        "spring.datasource.url=jdbc:h2:mem:order_test_db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+        "spring.datasource.url=jdbc:h2:mem:order_test_db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS JSON",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password="
@@ -82,7 +82,8 @@ public class PaymentCompletedStubRunnerTest {
     public void shouldProcessPaymentCompletedEventFromStub() throws Exception {
         // 1. Prepare Order and SagaState for processing
         Order order = new Order();
-        order.setCustomerId(12345L);
+        order.setPublicId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        order.setCustomerId(java.util.UUID.fromString("00000000-0000-0000-0000-000000012345"));
         order.setTotalAmount(new BigDecimal("100.00"));
         order.setCurrency("TRY");
         order.setStatus(OrderStatus.PENDING_PAYMENT);
@@ -99,11 +100,19 @@ public class PaymentCompletedStubRunnerTest {
         // This label matches the one defined in paymentCompleted.groovy
         stubTrigger.trigger("trigger_payment_completed");
 
-        // 3. Wait for the asynchronous Kafka listener to process the message
-        Thread.sleep(2000); // Wait for the consumer to finish processing
+        // 3. Wait for the asynchronous Kafka listener to process the message.
+        // Poll the committed state instead of assuming that two seconds is enough.
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+        Order updatedOrder;
+        do {
+            updatedOrder = orderRepository.findById(order.getId()).orElseThrow();
+            if (updatedOrder.getStatus() == OrderStatus.PAID) {
+                break;
+            }
+            Thread.sleep(100);
+        } while (System.nanoTime() < deadline);
 
         // 4. Assert that Order and SagaState were updated
-        Order updatedOrder = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.PAID, updatedOrder.getStatus());
 
         Optional<SagaState> updatedSagaStateOpt = sagaStateRepository.findByOrderId(order.getId());
