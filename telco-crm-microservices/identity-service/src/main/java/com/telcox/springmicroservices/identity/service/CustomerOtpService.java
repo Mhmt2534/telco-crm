@@ -106,11 +106,11 @@ public class CustomerOtpService {
 
         // 4. OTP'yi console'a logla — TODO: SMS provider entegrasyonu
         // Üretim ortamında bu log satırı KALDIRILMALI ve gerçek SMS servisi çağrılmalıdır.
-        log.info(">>> [OTP SIMULATION] Phone: {} | OTP: {} | TTL: 5 dakika <<<",
-                maskPhone(phone), otp);
+        log.info(">>> [OTP SIMULATION] Phone: {} | OTP: {} | TTL: 5 dakika | Redis key: {} <<<",
+                maskPhone(phone), otp, redisKey);
         // TODO: smsProviderService.send(phone, "Doğrulama kodunuz: " + otp);
 
-        log.debug("OTP generated and stored in Redis for phone: {}", maskPhone(phone));
+        log.debug("OTP generated and stored in Redis for phone: {} | Redis key: {}", maskPhone(phone), redisKey);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -128,7 +128,8 @@ public class CustomerOtpService {
      */
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public TokenResponse verifyOtp(String phone, String otp) {
-        log.debug("OTP verify attempt for phone: {}", maskPhone(phone));
+        log.debug("OTP verify attempt for phone: {} | will look up Redis key: {}",
+                maskPhone(phone), OTP_KEY_PREFIX + phone);
 
         // 1. otp_attempt tablosundan kaydı al (yoksa oluştur)
         OtpAttempt attempt = otpAttemptRepository.findByPhone(phone)
@@ -147,9 +148,11 @@ public class CustomerOtpService {
         // 3. Redis'teki OTP'yi kontrol et
         String redisKey = OTP_KEY_PREFIX + phone;
         String storedOtp = redisTemplate.opsForValue().get(redisKey);
+        log.debug("Redis lookup — key: {} | found: {}", redisKey, storedOtp != null);
 
         if (storedOtp == null) {
-            log.warn("OTP verify failed — OTP expired or not found for phone: {}", maskPhone(phone));
+            log.warn("OTP verify failed — OTP expired or not found | Redis key: {} | phone: {}",
+                    redisKey, maskPhone(phone));
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "OTP süresi dolmuş veya geçersiz. Lütfen yeni OTP talep edin."
