@@ -6,6 +6,7 @@ import com.telcox.springmicroservices.billing.entity.*;
 import com.telcox.springmicroservices.billing.repository.BillCycleRepository;
 import com.telcox.springmicroservices.billing.repository.InvoiceRepository;
 import com.telcox.springmicroservices.billing.repository.OutboxEventRepository;
+import com.telcox.springmicroservices.billing.repository.PendingChargeRepository;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
@@ -37,19 +38,22 @@ public class BillRunScheduler {
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
     private final UsageServiceClient usageServiceClient;
+    private final PendingChargeRepository pendingChargeRepository;
 
     public BillRunScheduler(BillCycleRepository billCycleRepository,
                             InvoiceRepository invoiceRepository,
                             OutboxEventRepository outboxEventRepository,
                             RedissonClient redissonClient,
                             ObjectMapper objectMapper,
-                            UsageServiceClient usageServiceClient) {
+                            UsageServiceClient usageServiceClient,
+                            PendingChargeRepository pendingChargeRepository) {
         this.billCycleRepository = billCycleRepository;
         this.invoiceRepository = invoiceRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.redissonClient = redissonClient;
         this.objectMapper = objectMapper;
         this.usageServiceClient = usageServiceClient;
+        this.pendingChargeRepository = pendingChargeRepository;
     }
 
     // Cron = Saniye Dakika Saat Gun Ay Gun(Hafta)
@@ -170,6 +174,39 @@ public class BillRunScheduler {
             }
         } catch (Exception e) {
             log.warn("Failed to fetch overage summary from usage-service for subscription {}, fallback to fixed amount only.", cycle.getSubscriptionId(), e);
+        }
+
+        // 3. Bekleyen Tarife Değişikliği (PendingCharge) ücretlerini faturaya ekle
+        try {
+            List<PendingCharge> pendingCharges = pendingChargeRepository.findBySubscriptionIdAndStatus(
+                    cycle.getSubscriptionId(),
+                    "PENDING"
+            );
+            for (PendingCharge pc : pendingCharges) {
+                InvoiceLine pcLine = new InvoiceLine();
+                pcLine.setDescription(pc.getDescription());
+                pcLine.setQuantity(1);
+                pcLine.setUnitPrice(pc.getAmount());
+                pcLine.setLineTotal(pc.getAmount());
+
+                invoice.addLine(pcLine);
+                totalAmount = totalAmount.add(pc.getAmount());
+
+                pc.setStatus("BILLED");
+                pendingChargeRepository.save(pc);
+            }
+
+            // Bir sonraki fatura dönemine ertelenen (PENDING_NEXT) kalemleri sıradaki dönem için PENDING yap
+            List<PendingCharge> pendingNextCharges = pendingChargeRepository.findBySubscriptionIdAndStatus(
+                    cycle.getSubscriptionId(),
+                    "PENDING_NEXT"
+            );
+            for (PendingCharge pcNext : pendingNextCharges) {
+                pcNext.setStatus("PENDING");
+                pendingChargeRepository.save(pcNext);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process pending charges for subscription id: {}", cycle.getSubscriptionId(), e);
         }
 
         invoice.setAmount(totalAmount);
