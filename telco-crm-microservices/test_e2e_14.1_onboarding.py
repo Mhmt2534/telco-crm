@@ -17,7 +17,9 @@ def generate_valid_tckn():
     return "".join(map(str, digits))
 
 def main():
-    base_url = "http://localhost:8080/api/v1"
+    customer_base = "http://localhost:9002/api/v1"
+    order_base = "http://localhost:9004/api/v1"
+    sub_base = "http://localhost:9005/api/v1"
     
     print("=== STARTING KART 12 E2E TEST ===")
     
@@ -40,7 +42,7 @@ def main():
     }
     print(f"   [REQUEST PAYLOAD] {json.dumps(customer_payload, indent=2)}")
     
-    req = urllib.request.Request(f"{base_url}/customers", data=json.dumps(customer_payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+    req = urllib.request.Request(f"{customer_base}/customers", data=json.dumps(customer_payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
     try:
         with urllib.request.urlopen(req) as response:
             res_body = response.read().decode('utf-8')
@@ -54,11 +56,11 @@ def main():
         print(f"   [FAILED] Customer creation HTTP error: {e.code} {e.reason}")
         print(f"            Response body: {e.read().decode('utf-8')}")
         sys.exit(1)
-
+ 
     # 2. KYC Approval
     print(f"2. Sending KYC approval request to POST /api/v1/customers/{customer_id}/kyc/approve...")
     req_kyc = urllib.request.Request(
-        f"{base_url}/customers/{customer_id}/kyc/approve",
+        f"{customer_base}/customers/{customer_id}/kyc/approve",
         headers={"Content-Type": "application/json"},
         method="POST"
     )
@@ -72,13 +74,28 @@ def main():
         print(f"   [FAILED] KYC approval failed: HTTP Error {e.code}: {e.reason}")
         print(f"            Response body: {e.read().decode('utf-8')}")
         sys.exit(1)
+ 
+    # Retrieve keycloak_user_id generated during KYC approval
+    keycloak_user_id = None
+    try:
+        cmd = [
+            "docker", "exec", "-i", "customer-db", 
+            "psql", "-U", "postgres", "-d", "customer_db", 
+            "-t", "-A", "-c", f"SELECT keycloak_user_id FROM customer WHERE public_id = '{customer_id}';"
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        keycloak_user_id = result.stdout.strip()
+        print(f"   [INFO] Retrieved Keycloak User ID from DB: {keycloak_user_id}\n")
+    except Exception as e:
+        print(f"   [FAILED] Failed to retrieve Keycloak User ID: {e}")
+        sys.exit(1)
 
     # 3. Create Order
     order_payload = {
         "customerId": customer_id,
         "items": [
             {
-                "productCode": "TRF-TEST",
+                "productId": "9e7867ba-0230-4dcf-893f-dac172319d30",
                 "productType": "TARIFF",
                 "quantity": 1,
                 "unitPrice": 199.99
@@ -87,11 +104,12 @@ def main():
     }
     
     req_order = urllib.request.Request(
-        f"{base_url}/orders",
+        f"{order_base}/orders",
         data=json.dumps(order_payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
-            "Idempotency-Key": "test-idempotency-123"
+            "Idempotency-Key": "test-idempotency-123",
+            "X-User-Id": keycloak_user_id
         },
         method="POST"
     )
@@ -113,10 +131,10 @@ def main():
     except Exception as e:
         print(f"   [FAILED] Order creation failed: {e}")
         sys.exit(1)
-
+ 
     # Wait for database write
     time.sleep(2)
-
+ 
     # 4. Verify Debezium Outbox Table
     print("4. Querying Debezium outbox table (outbox_event) in order-db container...")
     try:
@@ -141,19 +159,23 @@ def main():
     except Exception as e:
         print(f"   [FAILED] Database query failed: {e}")
         sys.exit(1)
-
+ 
     # 5. Create Subscription
     print("5. Sending subscription creation request to POST /api/v1/subscriptions...")
     sub_payload = {
         "customerId": customer_id,
+        "tariffId": "9e7867ba-0230-4dcf-893f-dac172319d30",
         "tariffCode": "TRF-TEST"
     }
     print(f"   [REQUEST PAYLOAD] {json.dumps(sub_payload, indent=2)}")
     
     sub_req = urllib.request.Request(
-        f"{base_url}/subscriptions",
+        f"{sub_base}/subscriptions",
         data=json.dumps(sub_payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "X-User-Id": keycloak_user_id
+        },
         method="POST"
     )
     

@@ -39,15 +39,20 @@ def query_db(db_container, database, query):
 
 def curl_container_api(container_name, port, path, method="GET", payload=None):
     try:
-        cmd = ["docker", "exec", "-i", container_name, "curl", "-s", "-X", method]
-        if payload:
-            cmd.extend(["-H", "Content-Type: application/json", "-d", json.dumps(payload)])
-        cmd.append(f"http://localhost:{port}{path}")
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        print(f"Error calling container API: {e.stderr}")
+        url = f"http://localhost:{port}{path}"
+        if method.upper() == "GET":
+            r = requests.get(url, timeout=10)
+        elif method.upper() == "POST":
+            r = requests.post(url, json=payload, timeout=10)
+        elif method.upper() == "PUT":
+            r = requests.put(url, json=payload, timeout=10)
+        elif method.upper() == "DELETE":
+            r = requests.delete(url, timeout=10)
+        else:
+            r = requests.request(method, url, json=payload, timeout=10)
+        return r.text
+    except Exception as e:
+        print(f"Error calling local API at port {port}: {e}")
         return None
 
 def publish_kafka_message(topic, key, payload):
@@ -111,6 +116,21 @@ def main():
     current_day = get_current_day_of_month()
     test_sub_id = str(uuid.uuid4())
     fixed_amount = 100.00
+
+    # Query customer PK id (bigint) from customer-db using public_id
+    customer_pk = None
+    try:
+        cmd = [
+            "docker", "exec", "-i", "customer-db",
+            "psql", "-U", "postgres", "-d", "customer_db",
+            "-t", "-A", "-c", f"SELECT id FROM customer WHERE public_id = '{customer_id}';"
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        customer_pk = int(res.stdout.strip())
+        print(f"   [INFO] Customer DB PK: {customer_pk}")
+    except Exception as e:
+        print(f"   [FAIL] Failed to retrieve customer PK: {e}")
+        return
     
     print("   Eski test fatura döngüleri temizleniyor...")
     query_db("billing-db", "billing_db", "DELETE FROM bill_cycle WHERE msisdn LIKE '90533%';")
@@ -118,8 +138,8 @@ def main():
     # 2. BillCycle kaydı ekleme
     print(f"2. billing_db'ye BillCycle kaydı ekleniyor (cut_off_day: {current_day})...")
     sql_billcycle = (
-        f"INSERT INTO bill_cycle (customer_id, subscription_id, msisdn, cut_off_day, fixed_amount) "
-        f"VALUES ({customer_id}, '{test_sub_id}', '{phone_num}', {current_day}, {fixed_amount});"
+        f"INSERT INTO bill_cycle (customer_id, customer_public_id, subscription_id, msisdn, cut_off_day, fixed_amount) "
+        f"VALUES ({customer_pk}, '{customer_id}', '{test_sub_id}', '{phone_num}', {current_day}, {fixed_amount});"
     )
     query_db("billing-db", "billing_db", sql_billcycle)
 
@@ -232,21 +252,24 @@ def main():
     # Faturanın oluştuğunu ve tutarını doğrulama (102.50 TRY)
     print("8. billing_db'den oluşan fatura tutarı sorgulanıyor...")
     invoice_id = None
+    invoice_uuid = None
     invoice_amount_ok = False
     for _ in range(45):
         db_out = query_db("billing-db", "billing_db", 
-            f"SELECT id, amount, status FROM invoice WHERE customer_id={customer_id} LIMIT 1;")
+            f"SELECT id, public_id, amount, status FROM invoice WHERE customer_public_id='{customer_id}' LIMIT 1;")
         if "102.50" in db_out:
             invoice_amount_ok = True
             for line in db_out.splitlines():
-                if "102.50" in line:
-                    invoice_id = int(line.split("|")[0].strip())
+                if "102.50" in line and "|" in line:
+                    parts = line.split("|")
+                    invoice_id = int(parts[0].strip())
+                    invoice_uuid = parts[1].strip()
                     break
             break
         time.sleep(1)
 
     if invoice_amount_ok:
-        print(f"   [PASS] Fatura başarıyla oluşturuldu. ID: {invoice_id}, Tutar: 102.50 TRY")
+        print(f"   [PASS] Fatura başarıyla oluşturuldu. ID: {invoice_id}, UUID: {invoice_uuid}, Tutar: 102.50 TRY")
     else:
         print(f"   [FAIL] Fatura 102.50 TRY olarak oluşamadı! Son çıktı: {db_out.strip()}")
         return
@@ -269,12 +292,12 @@ def main():
     
     for _ in range(45):
         try:
-            pdf_resp_str = curl_container_api("billing-service", 9007, f"/api/v1/invoices/{invoice_id}/pdf", "GET")
+            pdf_resp_str = curl_container_api("billing-service", 9007, f"/api/v1/invoices/{invoice_uuid}/pdf", "GET")
             if pdf_resp_str and "pdfUrl" in pdf_resp_str:
                 presigned_data = json.loads(pdf_resp_str)
                 raw_url = presigned_data["pdfUrl"]
                 download_url = raw_url.replace("telco-minio", "localhost")
-                r = requests.get(download_url, headers={"Host": "telco-minio:9000"}, timeout=5)
+                r = requests.get(download_url, timeout=5)
                 if r.status_code == 200 and r.content.startswith(b"%PDF"):
                     pdf_found = True
                     break
@@ -297,12 +320,12 @@ def main():
     payment_payload = {
         "eventType": "PaymentCompleted",
         "paymentId": str(uuid.uuid4()),
-        "orderId": 99999,
-        "invoiceId": str(invoice_id),
+        "orderId": str(uuid.uuid4()),
+        "invoiceId": invoice_uuid,
         "customerId": customer_id,
         "amount": 102.50
     }
-    publish_kafka_message("telcox.Payment.events", str(invoice_id), payment_payload)
+    publish_kafka_message("telcox.Payment.events", invoice_uuid, payment_payload)
 
     # Fatura PAID doğrulaması
     paid_verified = False
