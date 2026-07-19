@@ -13,3 +13,5 @@ keycloak:
   realm: telco-crm-realm
   client-id: telco-crm-client
   client-secret: B3Zlh6fORItPVGdybGkILIkH9S3hQgex
+
+PII_ENCRYPTION_KEY: "default-dev-key-32-chars-long!!!"
