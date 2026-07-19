@@ -15,10 +15,8 @@ public interface MsisdnPoolRepository extends JpaRepository<MsisdnPool, String> 
 
     Optional<MsisdnPool> findByMsisdnAndStatus(String msisdn, MsisdnStatus status);
 
-    /**
-     * Havuzdan belirtilen statüdeki ilk N numarayı döner.
-     * Pageable(0, 1) ile çağrılarak tek bir FREE numara seçilir.
-     */
     List<MsisdnPool> findFirstByStatus(MsisdnStatus status, Pageable pageable);
+
+    boolean existsByMsisdnAndStatus(String msisdn, MsisdnStatus status);
 }
 

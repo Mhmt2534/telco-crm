@@ -752,6 +752,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:
@@ -872,6 +873,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      APP_MINIO_ENDPOINT: "http://telco-minio:9000"
       # Size the JVM heap to the container memory limit (local-dev footprint).
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
     depends_on:

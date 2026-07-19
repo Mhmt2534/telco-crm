@@ -70,11 +70,11 @@ public class MsisdnAllocationService {
                 if (isLocked) {
                     try {
                         // Kilit altındayken numaranın hala FREE olduğunu veritabanından teyit et
-                        Optional<MsisdnPool> verifiedPoolOpt = msisdnPoolRepository
-                                .findByMsisdnAndStatus(msisdn, MsisdnStatus.FREE);
+                        boolean isFree = msisdnPoolRepository
+                                .existsByMsisdnAndStatus(msisdn, MsisdnStatus.FREE);
 
-                        if (verifiedPoolOpt.isPresent()) {
-                            MsisdnPool msisdnPool = verifiedPoolOpt.get();
+                        if (isFree) {
+                            MsisdnPool msisdnPool = freeNumbers.get(0);
                             msisdnPool.setStatus(MsisdnStatus.RESERVED);
                             msisdnPoolRepository.save(msisdnPool);
                             log.info("[MSISDN] Numara " + msisdn + " başarıyla RESERVED olarak işaretlendi.");
@@ -107,9 +107,14 @@ public class MsisdnAllocationService {
     @Transactional
     public void confirmAllocation(String msisdn) {
         MsisdnPool msisdnPool = msisdnPoolRepository
-                .findByMsisdnAndStatus(msisdn, MsisdnStatus.RESERVED)
+                .findById(msisdn)
                 .orElseThrow(() -> new MsisdnAllocationException(
-                        "Numara bulunamadı veya RESERVED statüsünde değil: " + msisdn));
+                        "Numara bulunamadı: " + msisdn));
+
+        if (msisdnPool.getStatus() != MsisdnStatus.RESERVED) {
+            throw new MsisdnAllocationException(
+                    "Numara RESERVED statüsünde değil: " + msisdn);
+        }
 
         msisdnPool.setStatus(MsisdnStatus.ALLOCATED);
         msisdnPool.setReservedUntil(null);
